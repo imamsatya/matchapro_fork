@@ -33,7 +33,7 @@
     .gap-4 {
         gap: 1rem !important;
     }
-    
+
     .uppercase-text {
         text-transform: uppercase !important;
     }
@@ -83,21 +83,21 @@
                 <div class="mb-6">
                     <label class="form-label" for="nama_usaha">Nama Usaha <span class="text-danger">*</span></label>
                     <input {{$action_type == 'CREATE' ? 'readonly' : ''}} value="{{ $usaha->nama_usaha }}" type="text"
-                        class="form-control uppercase-text" id="nama_usaha" placeholder="Nama Usaha/Perusahaan" name="namaUsaha"
-                        aria-label="Nama Usaha/Perusahaan">
+                        class="form-control uppercase-text" id="nama_usaha" placeholder="Nama Usaha/Perusahaan"
+                        name="namaUsaha" aria-label="Nama Usaha/Perusahaan">
                     <div class="invalid-feedback"><span id="nama_usaha_error"></span></div>
                 </div>
                 <div class="mb-6">
                     <label class="form-label" for="nama-komersial">Nama Komersial</label>
-                    <input value="{{ $usaha->nama_komersial }}" type="text" class="form-control uppercase-text" id="nama-komersial"
-                        placeholder="Nama Komersial Usaha/Perusahaan" name="namaKomersial"
+                    <input value="{{ $usaha->nama_komersial }}" type="text" class="form-control uppercase-text"
+                        id="nama-komersial" placeholder="Nama Komersial Usaha/Perusahaan" name="namaKomersial"
                         aria-label="Nama Komersial Usaha/Perusahaan">
                 </div>
                 <div class="mb-6">
                     <label class="form-label" for="alamat_usaha">Alamat <span class="text-danger">*</span></label>
                     <input {{$action_type == 'CREATE' ? 'readonly' : ''}} value="{{ $usaha->alamat }}" type="text"
-                        class="form-control uppercase-text" id="alamat_usaha" placeholder="Alamat Usaha/Perusahaan" name="alamat"
-                        aria-label="Alamat Usaha/Perusahaan">
+                        class="form-control uppercase-text" id="alamat_usaha" placeholder="Alamat Usaha/Perusahaan"
+                        name="alamat" aria-label="Alamat Usaha/Perusahaan">
                     <div class="invalid-feedback"><span id="alamat_usaha_error"></span></div>
                 </div>
                 <div class="mb-6">
@@ -168,6 +168,186 @@
             <div class="col-12">
                 <div class="card mb-6">
                     <div class="card-header">
+                        <h4 class="card-title">Keberadaan Usaha/Perusahaan</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-6">
+                                    <label class="form-label">Kondisi Usaha/Perusahaan <span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" class="form-control hidden-input-only" style="display: none">
+                                    <div class="invalid-feedback">Salah satu opsi harus terpilih</div>
+                                    <div class="row">
+                                        <div class="col-12 col-md-6">
+                                            <div class="form-check mt-1">
+                                                <input {{ $usaha->status_perusahaan_id == '1' ? 'checked' : '' }}
+                                                    name="kondisi_usaha" class="form-check-input" type="radio" value="1"
+                                                    id="kondisi_aktif">
+                                                <label class="form-check-label" for="kondisi_aktif">Aktif</label>
+                                            </div>
+                                            @if($action_type != 'CREATE')
+                                            <div class="form-check mt-1">
+                                                <input {{ $usaha->status_perusahaan_id == '2' ? 'checked' : '' }}
+                                                    name="kondisi_usaha" class="form-check-input" type="radio" value="2"
+                                                    id="kondisi_tutup_sementara">
+                                                <label class="form-check-label" for="kondisi_tutup_sementara">Tutup
+                                                    Sementara</label>
+                                            </div>
+                                            <div class="form-check mt-1">
+                                                <input {{ $usaha->status_perusahaan_id == '3' ? 'checked' : '' }}
+                                                    name="kondisi_usaha" class="form-check-input" type="radio" value="3"
+                                                    id="kondisi_belum_operasi">
+                                                <label class="form-check-label" for="kondisi_belum_operasi">Belum
+                                                    Beroperasi/Berproduksi</label>
+                                            </div>
+                                            <div class="form-check mt-1">
+                                                <input {{ $usaha->status_perusahaan_id == '4' ? 'checked' : '' }}
+                                                    name="kondisi_usaha" class="form-check-input" type="radio" value="4"
+                                                    id="kondisi_tutup">
+                                                <label class="form-check-label" for="kondisi_tutup">Tutup</label>
+                                            </div>
+                                            <div class="form-check mt-1">
+                                                <input {{ $usaha->status_perusahaan_id == '5' ? 'checked' : '' }}
+                                                    name="kondisi_usaha" class="form-check-input" type="radio" value="5"
+                                                    id="kondisi_alih_usaha">
+                                                <label class="form-check-label" for="kondisi_alih_usaha">Alih
+                                                    Usaha</label>
+                                            </div>
+                                            @endif
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            @if($action_type != 'CREATE')
+                                            <div class="form-check mt-1">
+                                                <input {{ $usaha->status_perusahaan_id == '6' ? 'checked' : '' }}
+                                                    name="kondisi_usaha" class="form-check-input" type="radio" value="6"
+                                                    id="kondisi_tidak_ditemukan">
+                                                <label class="form-check-label" for="kondisi_tidak_ditemukan">Tidak
+                                                    Ditemukan</label>
+                                            </div>
+                                            <div class="form-check mt-1">
+                                                <input {{ $usaha->status_perusahaan_id == '7' ? 'checked' : '' }}
+                                                    name="kondisi_usaha" class="form-check-input" type="radio" value="7"
+                                                    id="kondisi_aktif_pindah">
+                                                <label class="form-check-label" for="kondisi_aktif_pindah">Aktif
+                                                    Pindah</label>
+                                            </div>
+                                            <div class="form-check mt-1">
+                                                <input {{ $usaha->status_perusahaan_id == '8' ? 'checked' : '' }}
+                                                    name="kondisi_usaha" class="form-check-input" type="radio" value="8"
+                                                    id="kondisi_aktif_nonrespon">
+                                                <label class="form-check-label" for="kondisi_aktif_nonrespon">Aktif
+                                                    Nonrespon</label>
+                                            </div>
+                                            <div class="form-check mt-1">
+                                                <input {{ $usaha->status_perusahaan_id == '9' ? 'checked' : '' }}
+                                                    name="kondisi_usaha" class="form-check-input" type="radio" value="9"
+                                                    id="kondisi_duplikat">
+                                                <label class="form-check-label" for="kondisi_duplikat">Duplikat</label>
+                                            </div>
+                                            <div class="form-check mt-1">
+                                                <input {{ $usaha->status_perusahaan_id == '11' ? 'checked' : '' }}
+                                                    name="kondisi_usaha" class="form-check-input" type="radio"
+                                                    value="11" id="kondisi_salah_kode_wilayah">
+                                                <label class="form-check-label" for="kondisi_salah_kode_wilayah">Salah
+                                                    Kode Wilayah</label>
+                                            </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-6" id="container-idsbr-duplikat"
+                                    style="{{ $usaha->status_perusahaan_id != '9' ? 'display: none' : '' }}">
+                                    <label class="form-label" for="idsbr_master">Masukan IDSBR Master <span
+                                            class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <input value="{{ $usaha->idsbr_master }}" type="number" class="form-control"
+                                            placeholder="IDSBR Master" aria-label="IDSBR Master"
+                                            aria-describedby="button-check-idsbr" id="idsbr_master">
+                                        <button class="btn btn-outline-primary waves-effect" type="button"
+                                            id="button-check-idsbr">Check</button>
+                                    </div>
+                                    <input type="text" class="form-control hidden-input-only-duplikat"
+                                        style="display: none">
+                                    <div class="invalid-feedback">Belum ada idsbr master yang terkonfimasi!</div>
+                                    <div class="alert alert-primary mt-1 alert-validation-msg" role="alert">
+                                        <div class="alert-body d-flex align-items-center">
+                                            <i data-feather="info" class="me-50"></i>
+                                            <span>Klik <strong>CHECK</strong> untuk mengkonfirmasi!</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="card shadow-none bg-transparent border-primary">
+                                            <div class="card-body">
+                                                <h6 class="card-title"><span
+                                                        class="badge rounded-pill badge-light-primary">Konfirmasi</span>
+                                                </h6>
+                                                <p class="card-text">
+                                                    <ul class="list-unstyled">
+                                                        <li>
+                                                            <span class="fw-bolder me-25">IDSBR:</span> <span
+                                                                id="idsbr-confirm">{{ $idsbrMaster->kode ?? '-'}}</span>
+                                                        </li>
+                                                        <li><span class="fw-bolder me-25">Nama:</span> <span
+                                                                id="nama-confirm">{{ $idsbrMaster->nama ?? '-' }}</span>
+                                                        </li>
+                                                        <li><span class="fw-bolder me-25">Alamat:</span> <span
+                                                                id="alamat-confirm">{{ $idsbrMaster->alamat ?? '-' }}</span>
+                                                        </li>
+                                                    </ul>
+                                                </p>
+                                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                                    id="cancel-accept-idsbr">
+                                                    <i data-feather="x" class="me-25"></i>
+                                                    <span>Cancel</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-6" id="container-aktif-pindah"
+                                    style="{{ $usaha->status_perusahaan_id != '7' ? 'display: none' : '' }}">
+                                    <label class="form-label">Pilih Lokasi Pindah <span
+                                            class="text-danger">*</span></label>
+                                    <small class="text-muted"><i>Pindah Ke Kabupaten/Kota Yang Berbeda</i></small>
+                                    <div class="row">
+                                        <div class="col-12 col-md-6 col-sm-6">
+                                            <select id="provinsi_pindah" class="select2 form-select">
+                                                <option value="">-- Pilih Provinsi --</option>
+                                                @foreach($masterProvinsiAll as $option)
+                                                <option value="{{ $option->id }}"
+                                                    {{ $usaha->provinsi_pindah == $option->id ? 'selected' : '' }}>
+                                                    {{ $option->nama }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="col-12 col-md-6 col-sm-6" id="container-pindah-kabupaten">
+                                            <select id="kabupaten_kota_pindah" class="select2 form-select">
+                                                <option value="">-- Pilih Kabupaten/Kota --</option>
+                                                @foreach($masterKabupatenAll as $option)
+                                                <option value="{{ $option->id }}"
+                                                    {{ $usaha->kabupaten_kota_pindah == $option->id ? 'selected' : '' }}>
+                                                    {{ $option->nama }}</option>
+                                                @endforeach
+                                            </select>
+                                            <div>
+                                                <input type="text" class="form-control hidden-input-only-pindah-kab"
+                                                    style="display: none">
+                                                <div class="invalid-feedback">Kab/Kota terpilih tidak boleh sama dengan
+                                                    Kab/Kota
+                                                    asal.</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="card mb-6">
+                    <div class="card-header">
                         <h5 class="card-title mb-0">
                             WILAYAH USAHA/PERUSAHAAN
                         </h5>
@@ -180,7 +360,8 @@
                                 <option value="">-- Pilih Provinsi --</option>
                                 @foreach($masterProvinsi as $option)
                                 <option value="{{ $option->id }}"
-                                    {{ $option->id == $usaha->provinsi_id ? 'selected' : '' }}>[{{ $option->kode }}] {{ $option->nama }}
+                                    {{ $option->id == $usaha->provinsi_id ? 'selected' : '' }}>[{{ $option->kode }}]
+                                    {{ $option->nama }}
                                 </option>
                                 @endforeach
                             </select>
@@ -194,7 +375,8 @@
                                 <option value="">-- Pilih Kabupaten/Kota --</option>
                                 @foreach($masterKabKot as $option)
                                 <option value="{{ $option->id }}"
-                                    {{ $option->id == $usaha->kabupaten_kota_id ? 'selected' : '' }}>[{{ $option->kode }}] {{ $option->nama }}
+                                    {{ $option->id == $usaha->kabupaten_kota_id ? 'selected' : '' }}>
+                                    [{{ $option->kode }}] {{ $option->nama }}
                                 </option>
                                 @endforeach
                             </select>
@@ -206,7 +388,8 @@
                                 <option value="">-- Pilih Kecamatan --</option>
                                 @foreach($masterKecamatan as $option)
                                 <option value="{{ $option->id }}"
-                                    {{ $option->id == $usaha->kecamatan_id ? 'selected' : '' }}>[{{ $option->kode }}] {{ $option->nama }}
+                                    {{ $option->id == $usaha->kecamatan_id ? 'selected' : '' }}>[{{ $option->kode }}]
+                                    {{ $option->nama }}
                                 </option>
                                 @endforeach
                             </select>
@@ -217,7 +400,8 @@
                                 <option value="">-- Pilih Kelurahan/Desa --</option>
                                 @foreach($masterDesa as $option)
                                 <option value="{{ $option->id }}"
-                                    {{ $option->id == $usaha->kelurahan_desa_id ? 'selected' : '' }}>[{{ $option->kode }}] {{ $option->nama }}
+                                    {{ $option->id == $usaha->kelurahan_desa_id ? 'selected' : '' }}>
+                                    [{{ $option->kode }}] {{ $option->nama }}
                                 </option>
                                 @endforeach
                             </select>
@@ -233,44 +417,6 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="mb-6">
-                            <label class="form-label" for="kegiatan_utama">Kegiatan Utama Usaha/Perusahaan <span
-                                    class="text-danger">*</span></label>
-                            <input value="{{ $usaha->kegiatan_utama }}" type="text" class="form-control uppercase-text" id="kegiatan_utama"
-                                placeholder="Kegiatan Utama Usaha/Perusahaan" name="kegiatan_utama"
-                                aria-label="Kegiatan Utama Usaha/Perusahaan">
-                            <div class="invalid-feedback"><span id="kegiatan_utama_error"></span></div>
-                        </div>
-                        <div class="mb-6" id="container-kategori">
-                            <label class="form-label" for="kategori">Kategori <span class="text-danger">*</span></label>
-                            <select id="kategori" class="select2 form-select">
-                                <option value="">-- Pilih Kategori --</option>
-                                @foreach($masterKategori as $kategori)
-                                <option value="{{ $kategori->Kode }}"
-                                    {{ $kategori->Kode == $usaha->kategori ? 'selected' : '' }}>{{ $kategori->Kode }} -
-                                    {{ $kategori->Judul }}</option>
-                                @endforeach
-                            </select>
-                            <div class="invalid-feedback"><span id="kategori_error"></span></div>
-                        </div>
-                        <div class="mb-6" id="container-kbli">
-                            <label class="form-label" for="kbli">KBLI <span class="text-danger">*</span></label>
-                            <select id="kbli" class="select2 form-select">
-                                <option value="">-- Pilih KBLI --</option>
-                                @foreach($masterKBLI as $kbli)
-                                <option value="{{ $kbli->Kode }}" {{ $kbli->Kode == $usaha->kbli ? 'selected' : '' }}>
-                                    {{ $kbli->Kode }} - {{ $kbli->Judul }}</option>
-                                @endforeach
-                            </select>
-                            <div class="invalid-feedback"><span id="kbli_error"></span></div>
-                        </div>
-                        <div class="mb-6">
-                            <label class="form-label" for="produk_utama">Produk utama (barang/jasa) yang
-                                dihasilkan/dijual</label>
-                            <input value="{{ $usaha->deskripsi_produk_usaha }}" type="text" class="form-control uppercase-text"
-                                id="produk_utama" placeholder="Produk Utama Usaha/Perusahaan" name="produk_utama"
-                                aria-label="Produk Utama Usaha/Perusahaan">
-                        </div>
                         <div class="mb-6">
                             <label class="form-label" for="jenis_kepemilikan_usaha">Jenis Kepemilikan Usaha</label>
                             <select id="jenis_kepemilikan_usaha" class="select2 form-select">
@@ -382,146 +528,150 @@
 </div>
 <div class="card">
     <div class="card-header">
-        <h4 class="card-title">Keberadaan Usaha/Perusahaan</h4>
+
+        <h4 class="card-title">Kegiatan Usaha</h4>
+
     </div>
     <div class="card-body">
         <div class="row">
-            <div class="col-12">
-                <div class="mb-6">
-                    <label class="form-label">Kondisi Usaha/Perusahaan <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control hidden-input-only" style="display: none">
-                    <div class="invalid-feedback">Salah satu opsi harus terpilih</div>
+            <div class="mb-6 col-12">
+                <input type="text" class="form-control hidden-kegiatan-usaha" style="display: none">
+                <div class="invalid-feedback">Minimal 1 kegiatan usaha dan kategori harus terisi</div>
+                <form action="#" class="invoice-repeater">
+                    <div data-repeater-list="k_usaha">
+                        @if(count($kegiatan_usaha) > 0)
+                            @foreach($kegiatan_usaha as $kegiatan)
+                            <div data-repeater-item>
+                                <div class="row d-flex align-items-end">
+                                    <div class="col-md-4 col-12">
+                                        <div class="mb-1">
+                                            <label class="form-label">Kegiatan Usaha</label>
+                                            <input name="l_kegiatan_usaha" type="text" class="form-control uppercase-text l_kegiatan_usaha" placeholder="Kegiatan Usaha"
+                                            aria-label="Kegiatan Usaha/Perusahaan" value="{{ $kegiatan->kegiatan_usaha ?? '' }}" />
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-2 col-12">
+                                        <div class="mb-1">
+                                            <label class="form-label">Kategori <span class="text-danger">*</span></label>
+                                            <select name="l_kategori_usaha" class="select2 form-select l_kategori_usaha">
+                                                <option value="">-- Pilih Kategori --</option>
+                                                @foreach($masterKategori as $kategori)
+                                                <option value="{{ $kategori->Kode }}"
+                                                    {{ $kategori->Kode == ($kegiatan->kategori ?? '') ? 'selected' : '' }}>{{ $kategori->Kode }} -
+                                                    {{ $kategori->Judul }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-2 col-12">
+                                        <div class="mb-1 container-lkbli">
+                                            <label class="form-label">KBLI</label>
+                                            <select name="l_kbli" class="select2 form-select l_kbli">
+                                                <option value="">-- Pilih KBLI --</option>                                                
+                                                @foreach($kegiatan->m_kbli as $kbli)
+                                                <option value="{{ $kbli->Kode }}" {{ $kbli->Kode == ($kegiatan->kbli ?? '') ? 'selected' : '' }}>
+                                                    {{ $kbli->Kode }} - {{ $kbli->Judul }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-2 col-12">
+                                        <div class="mb-1">
+                                            <label class="form-label" >Produk Utama</label>
+                                            <input type="text"
+                                                class="form-control uppercase-text l_produk_utama"
+                                                placeholder="Produk Usaha/Perusahaan" name="l_produk_utama"
+                                                aria-label="Produk Usaha/Perusahaan" value="{{ $kegiatan->produk_usaha ?? '' }}">
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-2 col-12 mb-50">
+                                        <div class="mb-1">
+                                            <button class="btn btn-outline-danger text-nowrap px-1" data-repeater-delete type="button">
+                                                <i data-feather="x" class="me-25"></i>
+                                                <span>Delete</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            @endforeach
+                        @else
+                        <div data-repeater-item>
+                            <div class="row d-flex align-items-end">
+                                <div class="col-md-4 col-12">
+                                    <div class="mb-1">
+                                        <label class="form-label">Kegiatan Usaha</label>
+                                        <input name="l_kegiatan_usaha" type="text" class="form-control uppercase-text l_kegiatan_usaha" placeholder="Kegiatan Usaha"
+                                        aria-label="Kegiatan Usaha/Perusahaan" />
+                                    </div>
+                                </div>
+
+                                <div class="col-md-2 col-12">
+                                    <div class="mb-1">
+                                        <label class="form-label">Kategori <span class="text-danger">*</span></label>
+                                        <select name="l_kategori_usaha" class="select2 form-select l_kategori_usaha">
+                                            <option value="">-- Pilih Kategori --</option>
+                                            @foreach($masterKategori as $kategori)
+                                            <option value="{{ $kategori->Kode }}">{{ $kategori->Kode }} -
+                                                {{ $kategori->Judul }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-2 col-12">
+                                    <div class="mb-1 container-lkbli">
+                                        <label class="form-label">KBLI</label>
+                                        <select name="l_kbli" class="select2 form-select l_kbli">
+                                            <option value="">-- Pilih KBLI --</option>                                            
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-2 col-12">
+                                    <div class="mb-1">
+                                        <label class="form-label" >Produk</label>
+                                        <input type="text"
+                                            class="form-control uppercase-text l_produk_utama"
+                                            placeholder="Produk Usaha/Perusahaan" name="l_produk_utama"
+                                            aria-label="Produk Usaha/Perusahaan">
+                                    </div>
+                                </div>
+
+                                <div class="col-md-2 col-12 mb-50">
+                                    <div class="mb-1">
+                                        <button class="btn btn-outline-danger text-nowrap px-1" data-repeater-delete
+                                            type="button">
+                                            <i data-feather="x" class="me-25"></i>
+                                            <span>Delete</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr />
+                        </div>
+                        @endif
+                    </div>
                     <div class="row">
-                        <div class="col-12 col-md-3 col-sm-4">
-                            <div class="form-check mt-1">
-                                <input {{ $usaha->status_perusahaan_id == '1' ? 'checked' : '' }} name="kondisi_usaha"
-                                    class="form-check-input" type="radio" value="1" id="kondisi_aktif">
-                                <label class="form-check-label" for="kondisi_aktif">Aktif</label>
-                            </div>
-                            @if($action_type != 'CREATE')
-                            <div class="form-check mt-1">
-                                <input {{ $usaha->status_perusahaan_id == '2' ? 'checked' : '' }} name="kondisi_usaha"
-                                    class="form-check-input" type="radio" value="2" id="kondisi_tutup_sementara">
-                                <label class="form-check-label" for="kondisi_tutup_sementara">Tutup
-                                    Sementara</label>
-                            </div>
-                            <div class="form-check mt-1">
-                                <input {{ $usaha->status_perusahaan_id == '3' ? 'checked' : '' }} name="kondisi_usaha"
-                                    class="form-check-input" type="radio" value="3" id="kondisi_belum_operasi">
-                                <label class="form-check-label" for="kondisi_belum_operasi">Belum
-                                    Beroperasi/Berproduksi</label>
-                            </div>
-                            @endif
-                        </div>
-                        <div class="col-12 col-md-3 col-sm-4">
-                            @if($action_type != 'CREATE')
-                            <div class="form-check mt-1">
-                                <input {{ $usaha->status_perusahaan_id == '4' ? 'checked' : '' }} name="kondisi_usaha"
-                                    class="form-check-input" type="radio" value="4" id="kondisi_tutup">
-                                <label class="form-check-label" for="kondisi_tutup">Tutup</label>
-                            </div>
-                            <div class="form-check mt-1">
-                                <input {{ $usaha->status_perusahaan_id == '7' ? 'checked' : '' }} name="kondisi_usaha"
-                                    class="form-check-input" type="radio" value="7" id="kondisi_aktif_pindah">
-                                <label class="form-check-label" for="kondisi_aktif_pindah">Aktif Pindah</label>
-                            </div>
-                            <div class="form-check mt-1">
-                                <input {{ $usaha->status_perusahaan_id == '9' ? 'checked' : '' }} name="kondisi_usaha"
-                                    class="form-check-input" type="radio" value="9" id="kondisi_duplikat">
-                                <label class="form-check-label" for="kondisi_duplikat">Duplikat</label>
-                            </div>
-                            @endif
+                        <div class="col-12">
+                            <button class="btn btn-icon btn-primary" type="button" data-repeater-create>
+                                <i data-feather="plus" class="me-25"></i>
+                                <span>Add New</span>
+                            </button>
                         </div>
                     </div>
-                </div>
-                <div class="mb-6" id="container-idsbr-duplikat"
-                    style="{{ $usaha->status_perusahaan_id != '9' ? 'display: none' : '' }}">
-                    <label class="form-label" for="idsbr_master">Masukan IDSBR Master <span
-                            class="text-danger">*</span></label>
-                    <div class="input-group">
-                        <input value="{{ $usaha->idsbr_master }}" type="number" class="form-control"
-                            placeholder="IDSBR Master" aria-label="IDSBR Master" aria-describedby="button-check-idsbr"
-                            id="idsbr_master">
-                        <button class="btn btn-outline-primary waves-effect" type="button"
-                            id="button-check-idsbr">Check</button>
-                    </div>
-                    <input type="text" class="form-control hidden-input-only-duplikat" style="display: none">
-                    <div class="invalid-feedback">Belum ada idsbr master yang terkonfimasi!</div>
-                    <div class="alert alert-primary mt-1 alert-validation-msg" role="alert">
-                        <div class="alert-body d-flex align-items-center">
-                            <i data-feather="info" class="me-50"></i>
-                            <span>Klik <strong>CHECK</strong> untuk mengkonfirmasi!</span>
-                        </div>
-                    </div>
-                    <div class="col-12">
-                        <div class="card shadow-none bg-transparent border-primary">
-                            <div class="card-body">
-                                <h6 class="card-title"><span
-                                        class="badge rounded-pill badge-light-primary">Konfirmasi</span>
-                                </h6>
-                                <p class="card-text">
-                                    <ul class="list-unstyled">
-                                        <li>
-                                            <span class="fw-bolder me-25">IDSBR:</span> <span
-                                                id="idsbr-confirm">{{ $idsbrMaster->kode ?? '-'}}</span>
-                                        </li>
-                                        <li><span class="fw-bolder me-25">Nama:</span> <span
-                                                id="nama-confirm">{{ $idsbrMaster->nama ?? '-' }}</span></li>
-                                        <li><span class="fw-bolder me-25">Alamat:</span> <span
-                                                id="alamat-confirm">{{ $idsbrMaster->alamat ?? '-' }}</span>
-                                        </li>
-                                    </ul>
-                                </p>
-                                <button type="button" class="btn btn-sm btn-outline-primary" id="cancel-accept-idsbr">
-                                    <i data-feather="x" class="me-25"></i>
-                                    <span>Cancel</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="mb-6" id="container-aktif-pindah"
-                    style="{{ $usaha->status_perusahaan_id != '7' ? 'display: none' : '' }}">
-                    <label class="form-label">Pilih Lokasi Pindah <span class="text-danger">*</span></label>
-                    <small class="text-muted"><i>Pindah Ke Kabupaten/Kota Yang Berbeda</i></small>
-                    <div class="row">
-                        <div class="col-12 col-md-6 col-sm-6">
-                            <select id="provinsi_pindah" class="select2 form-select">
-                                <option value="">-- Pilih Provinsi --</option>
-                                @foreach($masterProvinsiAll as $option)
-                                <option value="{{ $option->id }}"
-                                    {{ $usaha->provinsi_pindah == $option->id ? 'selected' : '' }}>
-                                    {{ $option->nama }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-12 col-md-6 col-sm-6" id="container-pindah-kabupaten">
-                            <select id="kabupaten_kota_pindah" class="select2 form-select">
-                                <option value="">-- Pilih Kabupaten/Kota --</option>
-                                @foreach($masterKabupatenAll as $option)
-                                <option value="{{ $option->id }}"
-                                    {{ $usaha->kabupaten_kota_pindah == $option->id ? 'selected' : '' }}>
-                                    {{ $option->nama }}</option>
-                                @endforeach
-                            </select>
-                            <div>
-                                <input type="text" class="form-control hidden-input-only-pindah-kab"
-                                    style="display: none">
-                                <div class="invalid-feedback">Kab/Kota terpilih tidak boleh sama dengan Kab/Kota
-                                    asal.</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                </form>
             </div>
         </div>
     </div>
 </div>
 <div class="card">
     <div class="card-header">
-
         <h4 class="card-title">Lain-Lain</h4>
-
     </div>
     <div class="card-body">
 
@@ -576,10 +726,10 @@
     </div>
 </div>
 
-<div class="modal fade text-start" id="consistency-check-modal" tabindex="-1" aria-labelledby="modal consistency check" data-bs-backdrop="static"
-    aria-hidden="true">
+<div class="modal fade text-start" id="consistency-check-modal" tabindex="-1" aria-labelledby="modal consistency check"
+    data-bs-backdrop="static" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">            
+        <div class="modal-content">
         </div>
     </div>
 </div>
@@ -594,6 +744,7 @@
 
 @section('page-script')
 <script src="{{ asset(mix('vendors/js/forms/select/select2.full.min.js')) }}"></script>
+<script src="{{ asset(mix('vendors/js/forms/repeater/jquery.repeater.min.js')) }}"></script>
 <script>
     $(document).ready(function () {
         $(".select2").select2();
@@ -614,9 +765,9 @@
             // {provinsi: 100,kabupaten_kota: [{id: 1,text: 'Desa 1'},{id: 2,text: 'Desa 2'}]}
         ]
 
-        let kbliCache = [
-            // {kategori: 'A',kbli: [{id:'01111',text: '01111 - Some Description'}]}
-        ]
+        let kbliCache = []
+        // {kategori: 'A',kbli: [{id:'01111',text: '01111 - Some Description'}]}
+
 
         let idsbrAccept = {
             'idsbr': "{{ $idsbrMaster->kode ?? '' }}",
@@ -685,7 +836,7 @@
                     '_token': '{{ csrf_token() }}',
                     'level': 'user'
                 },
-                success: function (response) {                    
+                success: function (response) {
                     let wilKab = [{
                         id: '',
                         text: '-- Pilih Kabupaten/Kota --'
@@ -701,7 +852,7 @@
                     kabupatenCache.push({
                         provinsi: provinsi,
                         kabupaten_kota: wilKab
-                    })                    
+                    })
 
                     setOption($('#kabupaten_kota'), wilKab);
                     setOption($('#kecamatan'), [{
@@ -837,6 +988,70 @@
             })
         });
 
+        $(document).on('change', '.l_kategori_usaha', function() {
+            updateKBLIOptions(this);
+        });
+
+        function updateKBLIOptions(select) {            
+            let kategori = $(select).val();            
+            let $kbliSelect = $(select).closest('.row').find('.l_kbli');            
+            let $containerKbli = $(select).closest('.row').find('.container-lkbli');
+            if(kategori == '') {
+                setOption($kbliSelect, [{
+                    id: '',
+                    text: '-- Pilih KBLI --'
+                }]);
+                return;
+            }
+
+            let findCache = kbliCache.find(dc => dc.kategori == kategori)
+            if (findCache) {
+                setOption($kbliSelect, findCache.kbli);
+                return;
+            }
+            
+            blockProgress($containerKbli);
+            $.ajax({
+                url: '{{ route("master-kbli") }}',
+                type: 'POST',
+                data: {
+                    'kategori': kategori,
+                    '_token': '{{ csrf_token() }}'
+                },
+                success: function (response) {
+                    let kbli = [{
+                        id: '',
+                        text: '-- Pilih KBLI --'
+                    }]
+                    for (let i = 0; i < response.length; i++) {
+                        kbli.push({
+                            id: response[i].Kode,
+                            text: '[' + response[i].Kode + ']' + ' ' + response[i].Judul
+                        })
+                    }
+                    kbliCache.push({
+                        kategori: kategori,
+                        kbli: kbli
+                    });
+                    setOption($kbliSelect, kbli);
+                    unblockProgress($containerKbli);
+                },
+                error: function() {
+                    Swal.fire({
+                        title: 'Pemberitahuan',
+                        text: 'Gagal mengambil data KBLI!',
+                        icon: 'error',
+                        customClass: {
+                            confirmButton: 'btn btn-primary'
+                        },
+                        buttonsStyling: false
+                    });
+                    unblockProgress($containerKbli);
+                }
+            });
+            
+        }
+
         $("#kategori").on('change', function () {
             blockProgress($("#container-kbli"));
             let kategori = $(this).val();
@@ -890,7 +1105,7 @@
 
         $("input[name='kondisi_usaha']").on('change', function () {
             let kondisi = $(this).val();
-            if (kondisi == '7') {
+            if (kondisi == '7' || kondisi == '11') {
                 // kalau aktif pindah: tampilkan form pilih kabkot terbaru
                 $("#container-aktif-pindah").show();
                 $("#container-idsbr-duplikat").hide();
@@ -993,7 +1208,7 @@
             idsbrTemporary = {};
         });
 
-        $("#backdrop").on('hidden.bs.modal', function () {            
+        $("#backdrop").on('hidden.bs.modal', function () {
             if (closeTrigger == 'accept') {
                 $("#idsbr-confirm").html(idsbrAccept.idsbr);
                 $("#nama-confirm").html(idsbrAccept.nama);
@@ -1113,7 +1328,7 @@
         })
 
         $("#save-draft").on('click', function () {
-            initializeFormOutput();
+            initializeFormOutput();            
             validateForm();
             showErrorMessages();                        
 
@@ -1125,7 +1340,7 @@
             let keyErrors = Object.keys(listError);
             if (keyErrors.length) {
                 for (let key in listError) {
-                    $("#" + key+"_error").html(listError[key]);
+                    $("#" + key + "_error").html(listError[key]);
                 }
             }
         }
@@ -1134,16 +1349,39 @@
             initializeFormOutput();
             validateForm();
             showErrorMessages();
-            let numError = calculateError();            
+            let numError = calculateError();
             if (numError) return;
 
             let numConsistency = consistencyCheck();
-            if(numConsistency) {
+            if (numConsistency) {
                 showConsistencyCheck();
                 return;
-            }            
+            }
 
             confirmSubmitData();
+        });
+
+        // form repeater jquery
+        $('.invoice-repeater, .repeater-default').repeater({            
+            show: function () {                
+                // Reinitialize Select2 for all select2 elements inside the repeater
+                $('.select2-container').remove();
+                $('.select2').select2();
+                $(this).slideDown();
+
+                $(this).find('select[name="l_kategori_usaha"]').on('change', function() {
+                        updateKBLIOptions(this);
+                    });
+                // Feather Icons
+                if (feather) {
+                    feather.replace({ width: 14, height: 14 });
+                }
+            },
+            hide: function (deleteElement) {
+                if (confirm('Are you sure you want to delete this element?')) {
+                    $(this).slideUp(deleteElement);
+                }
+            }
         });
 
         function confirmSubmitData() {
@@ -1167,7 +1405,7 @@
         }
 
         function showConsistencyCheck() {
-            let keyConsistencyCheck = Object.keys(listConsistencyCheck);            
+            let keyConsistencyCheck = Object.keys(listConsistencyCheck);
             if (keyConsistencyCheck.length) {
                 // show modal with listConsistencyCheck
                 // Create modal content
@@ -1193,7 +1431,7 @@
                 $('#consistency-check-modal .modal-content').html(modalContent);
 
                 // Add event listener for the confirm button
-                $('#confirm-consistency').on('click', function() {
+                $('#confirm-consistency').on('click', function () {
                     $('#consistency-check-modal').modal('hide');
                     confirmSubmitData();
                 });
@@ -1304,7 +1542,7 @@
 
                 },
                 error: function (err) {
-                    unblockProgress('body');                    
+                    unblockProgress('body');
                     let errorMessage = 'An unexpected error occurred';
                     if (err.responseJSON && err.responseJSON.message) {
                         errorMessage = err.responseJSON.message;
@@ -1325,9 +1563,10 @@
         function consistencyCheck() {
             // check consistency between data
             // 1. check if badan usaha = PT -> nama perusahaan harus mengandung PT            
-            if(outputForm.badan_usaha == '1') {                
-                if(!outputForm.nama.toLowerCase().includes('pt')) {                    
-                    listConsistencyCheck['nama_usaha'] = 'Badan Hukum = PT Tetapi nama perusahaan tidak mengandung PT';
+            if (outputForm.badan_usaha == '1') {
+                if (!outputForm.nama.toLowerCase().includes('pt')) {
+                    listConsistencyCheck['nama_usaha'] =
+                        'Badan Hukum = PT Tetapi nama perusahaan tidak mengandung PT';
                 } else {
                     delete listConsistencyCheck.nama_usaha;
                 }
@@ -1336,22 +1575,24 @@
             }
 
             // 2. check if nama contain 'PT' but badan usaha != PT            
-            if(outputForm.nama.toLowerCase().includes('pt') && outputForm.badan_usaha != '1') {
-                listConsistencyCheck['badan_usaha'] = 'Badan Hukum tidak PT Tetapi nama perusahaan mengandung PT';
+            if (outputForm.nama.toLowerCase().includes('pt') && outputForm.badan_usaha != '1') {
+                listConsistencyCheck['badan_usaha'] =
+                    'Badan Hukum tidak PT Tetapi nama perusahaan mengandung PT';
             } else {
                 delete listConsistencyCheck.badan_usaha;
             }
 
             // 3. check if kbli kantor pusat (70100) tetapi jaringan usaha <> 2 (kantor pusat)            
-            if(outputForm.kbli == '70100' && outputForm.jaringan_usaha != '2') {
-                listConsistencyCheck['kbli'] = 'KBLI kantor pusat (70100) tetapi jaringan usaha tidak kantor pusat';
+            if (outputForm.kbli == '70100' && outputForm.jaringan_usaha != '2') {
+                listConsistencyCheck['kbli'] =
+                    'KBLI kantor pusat (70100) tetapi jaringan usaha tidak kantor pusat';
             } else {
                 delete listConsistencyCheck.kbli;
-            }   
-            
+            }
+
             let consistencyCheckKeys = Object.keys(listConsistencyCheck);
             return consistencyCheckKeys.length;
-            
+
         }
 
         function validateForm() {
@@ -1368,10 +1609,10 @@
             if (!outputForm.alamat) {
                 $("#alamat_usaha").addClass('is-invalid');
                 listError['alamat_usaha'] = 'Alamat usaha harus terisi';
-            } else if(/^\d+$/.test(outputForm.alamat)) {
+            } else if (/^\d+$/.test(outputForm.alamat)) {
                 $("#alamat_usaha").addClass('is-invalid');
                 listError['alamat_usaha'] = 'Alamat tidak valid';
-            } else if(outputForm.alamat.length < 5) {
+            } else if (outputForm.alamat.length < 5) {
                 $("#alamat_usaha").addClass('is-invalid');
                 listError['alamat_usaha'] = 'Alamat terlalu pendek, minimal 5 karakter';
             } else {
@@ -1418,32 +1659,52 @@
                 delete listError.kabupaten_kota;
             }
 
-            // kegiatan usaha
-            if (!outputForm.kegiatan_utama) {
-                $("#kegiatan_utama").addClass('is-invalid');
-                listError['kegiatan_utama'] = 'Kegiatan usaha harus terisi';
+            if(!outputForm.kegiatan_usaha.length) {                
+                $(".hidden-kegiatan-usaha").addClass('is-invalid');
+                listError['kegiatan_usaha'] = 'Kegiatan Usaha tidak boleh kosong';
             } else {
-                $("#kegiatan_utama").removeClass('is-invalid');
-                delete listError.kegiatan_utama;
+                let t_err = false;
+                for(let i = 0; i < outputForm.kegiatan_usaha.length; i++) {
+                    if(!outputForm.kegiatan_usaha[i].kategori) {                        
+                        $(".hidden-kegiatan-usaha").addClass('is-invalid');
+                        listError['kegiatan_usaha'] = 'Kategori tidak boleh kosong';
+                        t_err = true;
+                        break;
+                    }
+                }
+
+                if(!t_err) {
+                    $(".hidden-kegiatan-usaha").removeClass('is-invalid');
+                    delete listError.kegiatan_usaha;
+                }
             }
+
+            // kegiatan usaha
+            // if (!outputForm.kegiatan_utama) {
+            //     $("#kegiatan_utama").addClass('is-invalid');
+            //     listError['kegiatan_utama'] = 'Kegiatan usaha harus terisi';
+            // } else {
+            //     $("#kegiatan_utama").removeClass('is-invalid');
+            //     delete listError.kegiatan_utama;
+            // }
 
             // kategori usaha
-            if (!outputForm.kategori) {
-                $("#kategori").next('.select2-container').addClass('form-control is-invalid');
-                listError['kategori'] = 'Kategori harus terisi';
-            } else {
-                $("#kategori").next('.select2-container').removeClass('form-control is-invalid');
-                delete listError.kategori;
-            }
+            // if (!outputForm.kategori) {
+            //     $("#kategori").next('.select2-container').addClass('form-control is-invalid');
+            //     listError['kategori'] = 'Kategori harus terisi';
+            // } else {
+            //     $("#kategori").next('.select2-container').removeClass('form-control is-invalid');
+            //     delete listError.kategori;
+            // }
 
             // kbli usaha
-            if (!outputForm.kbli) {
-                $("#kbli").next('.select2-container').addClass('form-control is-invalid');
-                listError['kbli'] = 'KBLI harus terisi';
-            } else {
-                $("#kbli").next('.select2-container').removeClass('form-control is-invalid');
-                delete listError.kbli;
-            }
+            // if (!outputForm.kbli) {
+            //     $("#kbli").next('.select2-container').addClass('form-control is-invalid');
+            //     listError['kbli'] = 'KBLI harus terisi';
+            // } else {
+            //     $("#kbli").next('.select2-container').removeClass('form-control is-invalid');
+            //     delete listError.kbli;
+            // }
 
             // sumber profiling
             if (!outputForm.sumber_profiling) {
@@ -1469,11 +1730,12 @@
                 listError['status_perusahaan'] = 'Kondisi usaha/perusahaan harus terisi';
             } else {
 
-                // if aktif pindah terpilih
-                if (outputForm.status_perusahaan == '7') {
+                // if aktif pindah terpilih atau salah kode wilayah terpilih
+                if (outputForm.status_perusahaan == '7' || outputForm.status_perusahaan == '11') {
                     if (!outputForm.provinsi_pindah) {
                         $("#provinsi_pindah").next('.select2-container').addClass('form-control is-invalid');
-                        listError['provinsi_pindah'] = 'Harus terisi jika aktif pindah terpilih';
+                        listError['provinsi_pindah'] =
+                            'Harus terisi jika aktif pindah atau salah kode wilayah terpilih';
                     } else {
                         $("#provinsi_pindah").next('.select2-container').removeClass('form-control is-invalid');
                         delete listError.provinsi_pindah;
@@ -1482,7 +1744,8 @@
                     if (!outputForm.kabupaten_kota_pindah) {
                         $("#kabupaten_kota_pindah").next('.select2-container').addClass(
                             'form-control is-invalid');
-                        listError['kabupaten_kota_pindah'] = 'Harus terisi jika aktif pindah terpilih';
+                        listError['kabupaten_kota_pindah'] =
+                            'Harus terisi jika aktif pindah atau salah kode wilayah terpilih';
                     } else {
 
                         // jika kabupaten kota usaha awal  = kabupaten kota pindah -> tidak boleh
@@ -1520,12 +1783,12 @@
                 $(".hidden-input-only").removeClass('is-invalid');
                 delete listError.status_perusahaan;
             }
-            
+
             // website validation
             if (outputForm.website) {
                 // Regular expression for validating a website URL
                 const websiteRegex = /^(https?:\/\/)?(www\.)?[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})+([\/\w \.-]*)*\/?$/;
-                
+
                 if (!websiteRegex.test(outputForm.website)) {
                     $("#website").addClass('is-invalid');
                     listError['website'] = 'Website harus memiliki format yang valid';
@@ -1542,10 +1805,11 @@
             if (outputForm.latitude) {
                 // Regular expression for validating latitude
                 const latitudeRegex = /^-?([1-8]?[1-9]|[1-9]0)\.{1}\d{1,15}$/;
-                
+
                 if (!latitudeRegex.test(outputForm.latitude)) {
                     $("#latitude").addClass('is-invalid');
-                    listError['latitude'] = 'Latitude harus memiliki format yang valid (contoh: -6.2315085326216)';
+                    listError['latitude'] =
+                        'Latitude harus memiliki format yang valid (contoh: -6.2315085326216)';
                 } else {
                     $("#latitude").removeClass('is-invalid');
                     delete listError.latitude;
@@ -1559,10 +1823,11 @@
             if (outputForm.longitude) {
                 // Regular expression for validating longitude
                 const longitudeRegex = /^-?((1[0-7]|[1-9]?)[0-9]|180)\.{1}\d{1,15}$/;
-                
+
                 if (!longitudeRegex.test(outputForm.longitude)) {
                     $("#longitude").addClass('is-invalid');
-                    listError['longitude'] = 'Longitude harus memiliki format yang valid (contoh: 106.63301713765)';
+                    listError['longitude'] =
+                        'Longitude harus memiliki format yang valid (contoh: 106.63301713765)';
                 } else {
                     $("#longitude").removeClass('is-invalid');
                     delete listError.longitude;
@@ -1573,13 +1838,13 @@
             }
 
             // if latitude is not empty but longitude is empty
-            if(outputForm.latitude && !outputForm.longitude) {
+            if (outputForm.latitude && !outputForm.longitude) {
                 $("#longitude").addClass('is-invalid');
                 listError['longitude'] = 'Jika latitude terisi, Longitude harus terisi';
             }
-            
+
             // if longitude is not empty but latitude is empty
-            if(!outputForm.latitude && outputForm.longitude) {
+            if (!outputForm.latitude && outputForm.longitude) {
                 $("#latitude").addClass('is-invalid');
                 listError['latitude'] = 'Latitude harus terisi';
             }
@@ -1588,11 +1853,11 @@
             if (outputForm.tahun_berdiri) {
                 const currentYear = new Date().getFullYear();
                 const tahunBerdiri = parseInt(outputForm.tahun_berdiri);
-                
+
                 if (isNaN(tahunBerdiri) || tahunBerdiri > currentYear) {
                     $("#tahun_berdiri").addClass('is-invalid');
                     listError['tahun_berdiri'] = 'Tahun berdiri tidak boleh lebih dari tahun saat ini';
-                } else if(tahunBerdiri.toString().length  != 4) {
+                } else if (tahunBerdiri.toString().length != 4) {
                     $("#tahun_berdiri").addClass('is-invalid');
                     listError['tahun_berdiri'] = 'Tahun berdiri harus 4 digit';
                 } else {
@@ -1607,7 +1872,7 @@
 
         }
 
-        $("#cancel-submit-final").on('click', function() {
+        $("#cancel-submit-final").on('click', function () {
             Swal.fire({
                 title: 'Konfirmasi',
                 text: 'Apakah anda yakin ingin membatalkan submit?',
@@ -1618,7 +1883,7 @@
                 confirmButtonText: 'Ya, batalkan!',
                 cancelButtonText: 'Close'
             }).then((result) => {
-                if (result.isConfirmed) {                    
+                if (result.isConfirmed) {
                     sendData('CANCELED');
                 }
             });
@@ -1648,10 +1913,10 @@
                 "kabupaten_kota": $("#kabupaten_kota").val(),
                 "kecamatan": $("#kecamatan").val(),
                 "kelurahan_desa": $("#kelurahan_desa").val(),
-                "kegiatan_utama": $("#kegiatan_utama").val().trim(),
-                "kategori": $("#kategori").val(),
-                "kbli": $("#kbli").val(),
-                "produk_utama": $("#produk_utama").val().trim(),
+                // "kegiatan_utama": $("#kegiatan_utama").val().trim(),
+                // "kategori": $("#kategori").val(),
+                // "kbli": $("#kbli").val(),
+                // "produk_utama": $("#produk_utama").val().trim(),
                 "jenis_kepemilikan_usaha": $("#jenis_kepemilikan_usaha").val(),
                 "badan_usaha": $("#badan_usaha").val(),
                 "tahun_berdiri": $("#tahun_berdiri").val().trim(),
@@ -1663,6 +1928,34 @@
                 "sumber_profiling": $("#sumber_profiling").val().trim(),
                 "catatan_profiling": $("#catatan_profiling").val()
             }
+
+            let repeaterData = [];
+            $('.invoice-repeater, .repeater-default').each(function() {
+                $(this).find('[data-repeater-item]').each(function() {
+                    let item = {};
+                    $(this).find('input, select').each(function() {                        
+                        let name = $(this).attr('name').split('[').pop().split(']')[0];
+                        if(name == 'l_kegiatan_usaha') {
+                            name = 'kegiatan_usaha';    
+                        }
+                        if(name == 'l_produk_utama') {
+                            name = 'produk_usaha';
+                        }
+                        if(name == 'l_kategori_usaha') {
+                            name = 'kategori';
+                        }
+                        if(name == 'l_kbli') {
+                            name = 'kbli';
+                        }
+                        let value = $(this).val();
+                        item[name] = value;
+                    });
+                    repeaterData.push(item);
+                });
+            });
+
+            // Add repeater data to form output
+            outputForm.kegiatan_usaha = repeaterData;
         }
 
         // data: [{id:1, text: 'desa'}, {id:2, text: 'desa'}]

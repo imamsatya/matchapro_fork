@@ -74,31 +74,68 @@ class FormUpdateUsahaController extends Controller
             $idTemporaryUpdateProfiling = $this->insertTemporaryUpdateProfiling($usaha);
             $temporary_data = DB::table('matchapro_temporary_update_profiling')
                 ->where('id', $idTemporaryUpdateProfiling)
-                ->first();
+                ->first();            
         }             
+
+        $temporary_kegiatan = DB::table('matchapro_temporary_update_profiling_kegiatan_usaha')
+                ->where('temp_ref', $temporary_data->id)
+                ->get();
+
+        
+        if($temporary_kegiatan->count()) {
+            $temporary_kegiatan = $temporary_kegiatan->map(function($item, $index) {
+                $t_kategori = $item->kategori;
+                if($t_kategori && $t_kategori != '') {
+                    $m_kbli = $this->masterKBLI->getMasterKBLIByKategori($t_kategori);
+                    $item->m_kbli = $m_kbli->toArray();
+                } else {
+                    $item->m_kbli = [];
+                }
+                return $item;
+            });
+        }
+
                 
         $dataUsaha = $temporary_data;
+        $dataKegiatan = $temporary_kegiatan;
         
         $provinsi_user = auth()->user()->provinsi_id;
         $kabupaten_user = auth()->user()->kabupaten_kota_id;
         $role_user = auth()->user()->getRoleNames()[0]; // PUSAT-ADMIN, dst
         $level_role_user = explode('-' , $role_user)[0]; // PUSAT, dst
         $valid = $this->isValidUser($dataUsaha, $provinsi_user, $kabupaten_user, $level_role_user);        
+        $wilayahAkses = DB::table('matchapro_users_wilayah_akses')->where('user_id', auth()->user()->id)->get();
     
         $mp = $this->masterWilayah->getMasterProvinsi();
-        $masterProvinsi = $valid ? $mp->filter(function($value) use ($level_role_user, $provinsi_user) {
-            if($level_role_user !== 'PUSAT') return $value->id == $provinsi_user;
+        // $masterProvinsi = $valid ? $mp->filter(function($value) use ($level_role_user, $provinsi_user) {
+        //     if($level_role_user !== 'PUSAT') return $value->id == $provinsi_user;
+        //     return true;
+        // }) : [];
+        $masterProvinsi = $mp->filter(function($value) use ($level_role_user, $wilayahAkses) {
+            if($level_role_user !== 'PUSAT') return $wilayahAkses->contains('provinsi_id', $value->id);
             return true;
-        }) : [];
-        $masterKabKot = $valid && $dataUsaha->provinsi_id ? $this->masterWilayah->getMasterKabKot($dataUsaha->provinsi_id) : [];        
-        $masterKecamatan = $valid && $dataUsaha->kabupaten_kota_id ? $this->masterWilayah->getMasterKecamatan($dataUsaha->kabupaten_kota_id) : [];        
-        $masterDesa =  $valid && $dataUsaha->kecamatan_id ? $this->masterWilayah->getMasterDesa($dataUsaha->kecamatan_id) : [];
+        });
+        // $masterKabKot = $valid && $dataUsaha->provinsi_id ? $this->masterWilayah->getMasterKabKot($dataUsaha->provinsi_id) : [];        
+        $mk = $dataUsaha->provinsi_id ? $this->masterWilayah->getMasterKabKot($dataUsaha->provinsi_id) : [];
+        $masterKabKot = [];
+        if($dataUsaha->provinsi_id) {
+            $masterKabKot = $mk->filter(function($value) use ($level_role_user, $wilayahAkses) {
+                if($level_role_user !== 'PUSAT') return $wilayahAkses->contains('kabupaten_kota_id', $value->id);
+                return true;
+            });
+        }
+        // $masterKecamatan = $valid && $dataUsaha->kabupaten_kota_id ? $this->masterWilayah->getMasterKecamatan($dataUsaha->kabupaten_kota_id) : [];        
+        $masterKecamatan = $dataUsaha->kabupaten_kota_id ? $this->masterWilayah->getMasterKecamatan($dataUsaha->kabupaten_kota_id) : [];        
+        // $masterDesa =  $valid && $dataUsaha->kecamatan_id ? $this->masterWilayah->getMasterDesa($dataUsaha->kecamatan_id) : [];
+        $masterDesa =  $dataUsaha->kecamatan_id ? $this->masterWilayah->getMasterDesa($dataUsaha->kecamatan_id) : [];
 
-        $masterProvinsiAll = $valid ? $mp : [];
-        $masterKabupatenAll = $valid && $dataUsaha->provinsi_pindah ? $this->masterWilayah->getMasterKabKot($dataUsaha->provinsi_pindah) : [];
+        // $masterProvinsiAll = $valid ? $mp : [];
+        $masterProvinsiAll = $mp;
+        // $masterKabupatenAll = $valid && $dataUsaha->provinsi_pindah ? $this->masterWilayah->getMasterKabKot($dataUsaha->provinsi_pindah) : [];
+        $masterKabupatenAll = $dataUsaha->provinsi_pindah ? $this->masterWilayah->getMasterKabKot($dataUsaha->provinsi_pindah) : [];
 
         $masterKategori = $this->masterKBLI->getMasterKategori();
-        $masterKBLI = $dataUsaha->kategori ? $this->masterKBLI->getMasterKBLIByKategori($dataUsaha->kategori) : [];
+        // $masterKBLI = $dataUsaha->kategori ? $this->masterKBLI->getMasterKBLIByKategori($dataUsaha->kategori) : [];
         $idsbrMaster = $dataUsaha->idsbr_master ? DB::table('business_perusahaan')->where('kode', $dataUsaha->idsbr_master)->first() : null;        
             
         $pageConfigs = ['sidebarCollapsed' => false, 'pageHeader' => false];
@@ -111,7 +148,7 @@ class FormUpdateUsahaController extends Controller
             'masterKecamatan' => $masterKecamatan,
             'masterDesa' => $masterDesa,
             'masterKategori' => $masterKategori,
-            'masterKBLI' => $masterKBLI,
+            // 'masterKBLI' => $masterKBLI,
             'usaha' => $dataUsaha,
             'masterProvinsiAll' => $masterProvinsiAll  ,
             'initPerusahaanId' => $init_perusahaan_id,
@@ -119,7 +156,8 @@ class FormUpdateUsahaController extends Controller
             'status_form' => $status_form,
             'action_type' => $action_type,
             'idsbrMaster' => $idsbrMaster,
-            'masterKabupatenAll' => $masterKabupatenAll
+            'masterKabupatenAll' => $masterKabupatenAll,
+            'kegiatan_usaha' => $dataKegiatan
         ]);
     }   
     
@@ -293,7 +331,7 @@ class FormUpdateUsahaController extends Controller
         $kegiatan = DB::table('business_aktivitas_perusahaan')->where('perusahaan_id', $perusahaan_id)
                     ->orderBy('kbli', 'desc')
                     ->orderBy('id', 'desc')
-                    ->first();
+                    ->get();
 
         // ambil satu aja
         $telepon = DB::table('business_alamat_telepon_perusahaan')->where('perusahaan_id', $perusahaan_id)
@@ -336,12 +374,21 @@ class FormUpdateUsahaController extends Controller
         $website = $website ? $website->website : null;
         $latitude = $usaha->latitude;
         $longitude = $usaha->longitude;
-        $kbli = $kegiatan ? $kegiatan->kbli : null;
-        $kategori = $kegiatan ? $kegiatan->kategori : null;
-        $kegiatan_utama = $kegiatan ? $kegiatan->aktivitas : null;
+        // $kbli = $kegiatan ? $kegiatan->kbli : null;
+        // $kategori = $kegiatan ? $kegiatan->kategori : null;
+        // $kegiatan_utama = $kegiatan ? $kegiatan->aktivitas : null;
+        $kegiatan_usaha = $kegiatan->map(function($item) {
+            return [
+                'kbli' => $item->kbli,
+                'kategori' => $item->kategori,
+                'kegiatan_usaha' => $item->aktivitas,
+                'produk_usaha' => null                
+            ];
+        })->toArray();
         $jaringan_usaha_id = null; // sudah sesuai -> tidak perlu transformasi
         $bentuk_badan_usaha_id = $this->bhbuTransform($usaha->jenis_badan_hukum_badan_usaha_id);
-        $deskripsi_produk_usaha = $produk ? $produk->produk : null;
+        // $deskripsi_produk_usaha = $produk ? $produk->produk : null;
+        $deskripsi_produk_usaha = null;
         $jenis_kepemilikan_id = null; // 1. BUMN, 2. Non BUMN, 3. BUMD, 4. BUMDes -> pas masukin ke db sbr perlu transformasi
         $tahun_berdiri = $usaha->tahun_pendirian;
         $keterangan_submitted = null;
@@ -355,7 +402,7 @@ class FormUpdateUsahaController extends Controller
         return  compact('alokasi_profiling_id', 'nama_usaha',
         'nama_komersial','provinsi_id','kabupaten_kota_id','kecamatan_id','kelurahan_desa_id',
         'sls_deskripsi','alamat','kodepos','telp','no_wa','email','website','latitude','longitude',
-        'kbli','kategori','kegiatan_utama','jaringan_usaha_id','bentuk_badan_usaha_id','deskripsi_produk_usaha',
+        'kegiatan_usaha', 'jaringan_usaha_id','bentuk_badan_usaha_id','deskripsi_produk_usaha',
         'jenis_kepemilikan_id','tahun_berdiri','keterangan_submitted','keterangan_approved','keterangan_rejected',
         'status_perusahaan_id','status_form','created_at','updated_at');
     }
@@ -441,6 +488,22 @@ class FormUpdateUsahaController extends Controller
                     ->where('status_form', $data['status_form'])
                     ->orderBy('updated_at', 'desc')
                     ->first();
+
+        $kegiatan_usaha = isset($data['kegiatan_usaha']) ? $data['kegiatan_usaha'] : [];
+        $temp_kegiatan = [];
+        foreach($kegiatan_usaha as $kegiatan) {
+            $temp_kegiatan[] = [
+                'kegiatan_usaha' => isset($kegiatan['kegiatan_usaha']) ? $kegiatan['kegiatan_usaha'] : null,
+                'kbli' => isset($kegiatan['kbli']) ? $kegiatan['kbli'] : null,
+                'kategori' => isset($kegiatan['kategori']) ? $kegiatan['kategori'] : null,
+                'produk_usaha' => isset($kegiatan['produk_usaha']) ? $kegiatan['produk_usaha'] : null,
+                'temp_ref' => $latestRecord->id
+            ];
+
+        }
+
+        // insert kegiatan usaha
+        DB::table('matchapro_temporary_update_profiling_kegiatan_usaha')->insert($temp_kegiatan);
 
         return $latestRecord->id;
     }
@@ -621,7 +684,8 @@ class FormUpdateUsahaController extends Controller
                 'idsbr_master' => $request->input('status_perusahaan') && $request->input('status_perusahaan') == '9' ? ($request->input('idsbr_master') ?? null) : null,
                 // kalo ini save biasa, let it null, but if it is an approval process let us store the user id
                 'validator' => in_array($status_form, ['APPROVED', 'REJECTED']) ? auth()->user()->id : null,
-                'updated_by' => auth()->user()->id
+                'updated_by' => auth()->user()->id,
+                'kegiatan_usaha' => $request->input('kegiatan_usaha') ?? null
             ];
             
             // if status form APPROVED, REJECTED , CANCELED -: 
@@ -631,6 +695,10 @@ class FormUpdateUsahaController extends Controller
                     ->where('alokasi_profiling_id', $alokasi_id)
                     ->orderBy('updated_at', 'desc')
                     ->first();
+
+                $latestKegiatanUsaha = DB::table('matchapro_temporary_update_profiling_kegiatan_usaha')
+                    ->where('temp_ref', $latestUpdate->id)
+                    ->get();
                 
                 $data['nama_usaha'] = $latestUpdate->nama_usaha;
                 $data['nama_komersial'] = $latestUpdate->nama_komersial;
@@ -664,6 +732,7 @@ class FormUpdateUsahaController extends Controller
                 $data['provinsi_pindah'] = $latestUpdate->provinsi_pindah;
                 $data['kabupaten_kota_pindah'] = $latestUpdate->kabupaten_kota_pindah;
                 $data['idsbr_master'] = $latestUpdate->idsbr_master;                
+                $data['kegiatan_usaha'] = $latestKegiatanUsaha->toArray();
             }
 
             // inserting data ....

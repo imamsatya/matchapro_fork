@@ -299,6 +299,10 @@
     {{-- Page js files --}}    
     <script>
         $(document).ready(function() {
+            let wilAksesProvinsi = @json($wilayahAksesProvinsi);
+            let wilAksesKabKot = @json($wilayahAksesKabupaten);
+
+            
             $('.select2').select2({
                 dropdownParent: $('#downloadModal')
             });
@@ -371,11 +375,31 @@
             function renderButton(data) {
                 return `
                 <div class="d-flex align-items-center col-actions">
-                    <a href="${data.action}" class="btn btn-sm btn-flat-warning me-1">${feather.icons['edit'].toSvg({ class: 'font-small-4' })}</a> 
+                    <a href="${data.action}" class="btn btn-edit-perusahaan btn-sm btn-flat-warning me-1">${feather.icons['edit'].toSvg({ class: 'font-small-4' })}</a> 
                     <a href="javascript:void(0);" data-perusahaan_id="${data.perusahaan_id}" class="btn btn-sm btn-flat-secondary view-usaha">${feather.icons['search'].toSvg({ class: 'font-small-4' })}</a>
                 </div>
                 `;
             }
+
+            $("#table_direktori_usaha tbody").on('click', '.btn-edit-perusahaan', function() {                
+                event.preventDefault();
+                let url = $(this).attr('href');
+                Swal.fire({
+                    title: 'Edit Perusahaan',
+                    text: 'Apakah Anda yakin ingin mengedit perusahaan ini?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#808080',
+                    confirmButtonText: 'Ya, edit!',
+                    cancelButtonText: 'Batal',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = url;
+                    }
+                });
+            });
 
             var perusahaan_id = null;
             $('#table_direktori_usaha tbody').on('click', '.view-usaha', function() {
@@ -565,7 +589,7 @@
                             text: '-- Pilih Provinsi --'
                         }]
                         for(let i = 0; i < data.length; i++) {
-                            if(levelUser.split('-')[0] == 'PUSAT' || data[i].id == provUser) {
+                            if(levelUser.split('-')[0] == 'PUSAT' || wilAksesProvinsi.includes(data[i].id)) {
                                 wilProv.push({
                                     id: data[i].id,
                                     text: '[' + data[i].kode + '] ' + data[i].nama
@@ -623,16 +647,19 @@
                         level: 'user'
                     },
                     success: function(response) {
+                        let levelUser = "{{ auth()->user()->getRoleNames()[0] }}";
                         let wilKab = [{
                             id: '',
                             text: '-- Pilih Kabupaten/Kota --'
                         }]
                         for (let i = 0; i < response.length; i++) {
-                            wilKab.push({
-                                id: response[i].id,
-                                text: '[' + response[i].kode + ']' + ' ' + response[i]
-                                    .nama
-                            })
+                            if(levelUser.split('-')[0] == 'PUSAT' || wilAksesKabKot.includes(response[i].id)) {
+                                wilKab.push({
+                                    id: response[i].id,
+                                    text: '[' + response[i].kode + ']' + ' ' + response[i]
+                                        .nama
+                                })
+                            }                            
                         }
                         kabupatenCache.push({
                             provinsi: provinsi,

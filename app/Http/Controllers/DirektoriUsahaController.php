@@ -22,21 +22,26 @@ class DirektoriUsahaController extends Controller
         $viewProvinsi = auth()->user()->getPermissionsViaRoles()->contains('name','view-usaha-provinsi');
         $viewKabupaten = auth()->user()->getPermissionsViaRoles()->contains('name','view-usaha-kabkot');        
 
+        $wilayahAkses = DB::table('matchapro_users_wilayah_akses')->where('user_id', auth()->user()->id)->get();
+
         $usaha = DB::table('business_perusahaan')
             ->selectRaw("
                 CASE 
                     WHEN status_perusahaan_id IN (1, 2, 3, 5, 8) THEN 'aktif'
-                    WHEN status_perusahaan_id IN (4, 6, 7, 9) THEN 'tidak_aktif'
+                    WHEN status_perusahaan_id IN (4, 6, 7, 9, 11) THEN 'tidak_aktif'
                     WHEN status_perusahaan_id IS NULL THEN 'undefined'
                 END AS status_usaha,
                 COUNT(*) AS total
             ")
-            ->when($viewProvinsi, function($query) {
-                return $query->where('provinsi_id', auth()->user()->provinsi_id);
+            ->when($viewProvinsi || $viewKabupaten, function($query) use ($wilayahAkses) {
+                return $query->whereIn('kabupaten_kota_id', $wilayahAkses->pluck('kabupaten_kota_id'));
             })
-            ->when($viewKabupaten, function($query) {
-                return $query->where('kabupaten_kota_id', auth()->user()->kabupaten_kota_id);
-            })
+            // ->when($viewProvinsi, function($query) {
+            //     return $query->where('provinsi_id', auth()->user()->provinsi_id);
+            // })
+            // ->when($viewKabupaten, function($query) {
+            //     return $query->where('kabupaten_kota_id', auth()->user()->kabupaten_kota_id);
+            // })
             ->where(function($query) {
                 $query->where('status_perusahaan_id', '<>', 10)
                       ->orWhereNull('status_perusahaan_id');
@@ -44,7 +49,7 @@ class DirektoriUsahaController extends Controller
             ->groupBy(DB::raw("
                 CASE 
                     WHEN status_perusahaan_id IN (1, 2, 3, 5, 8) THEN 'aktif'
-                    WHEN status_perusahaan_id IN (4, 6, 7, 9) THEN 'tidak_aktif'
+                    WHEN status_perusahaan_id IN (4, 6, 7, 9, 11) THEN 'tidak_aktif'
                     WHEN status_perusahaan_id IS NULL THEN 'undefined'
                 END
             "))
@@ -63,14 +68,17 @@ class DirektoriUsahaController extends Controller
         'pageConfigs' => $pageConfigs,
         'usaha_aktif' => $usaha_aktif, 
         'usaha_tidak_aktif' => $usaha_tidak_aktif, 
-        'usaha_undefined' => $usaha_undefined
+        'usaha_undefined' => $usaha_undefined,
+        'wilayahAksesProvinsi' => $wilayahAkses->pluck('provinsi_id')->unique()->values()->toArray(),
+        'wilayahAksesKabupaten' => $wilayahAkses->pluck('kabupaten_kota_id')->unique()->values()->toArray()
         ]);
     }
 
     public function searchUsingFREETEXTTABLE($nama_usaha, $alamat_usaha, $provinsi_id = null, $kabupaten_kota_id = null) {
         $viewProvinsi = auth()->user()->getPermissionsViaRoles()->contains('name','view-usaha-provinsi');
         $viewKabupaten = auth()->user()->getPermissionsViaRoles()->contains('name','view-usaha-kabkot');        
-        
+        $wilayahAkses = DB::table('matchapro_users_wilayah_akses')->where('user_id', auth()->user()->id)->get();
+
         $subquery = DB::table('business_perusahaan as FT_TBL')
             ->selectRaw("
                 CASE 
@@ -92,12 +100,17 @@ class DirektoriUsahaController extends Controller
             ")
             ->leftJoin(DB::raw("FREETEXTTABLE(business_perusahaan, nama, ?) AS KEY_TBL"), 'FT_TBL.id', '=', DB::raw('KEY_TBL.[KEY]'))
             ->leftJoin(DB::raw("FREETEXTTABLE(business_perusahaan, alamat, ?) AS KEY_TBL2"), 'FT_TBL.id', '=', DB::raw('KEY_TBL2.[KEY]'))
-            ->when($viewProvinsi, function($query) {
-                return $query->where('FT_TBL.provinsi_id', auth()->user()->provinsi_id);
-            })
-            ->when($viewKabupaten, function($query) {
-                return $query->where('FT_TBL.kabupaten_kota_id', auth()->user()->kabupaten_kota_id);
+            ->when($viewProvinsi || $viewKabupaten, function($query) use ($wilayahAkses) {
+                return $query->whereIn('FT_TBL.kabupaten_kota_id', $wilayahAkses->pluck('kabupaten_kota_id'));
             });
+            // ->when($viewProvinsi, function($query) {
+            //     return $query->where('FT_TBL.provinsi_id', auth()->user()->provinsi_id);
+            // })
+            // ->when($viewKabupaten, function($query) {
+            //     return $query->where('FT_TBL.kabupaten_kota_id', auth()->user()->kabupaten_kota_id);
+            // });
+
+
             // ->when($provinsi_id, function($query, $provinsi_id) {
             //     return $query->where('FT_TBL.provinsi_id', $provinsi_id);
             // })
@@ -145,6 +158,8 @@ class DirektoriUsahaController extends Controller
         $viewProvinsi = auth()->user()->getPermissionsViaRoles()->contains('name','view-usaha-provinsi');
         $viewKabupaten = auth()->user()->getPermissionsViaRoles()->contains('name','view-usaha-kabkot');        
 
+        $wilayahAkses = DB::table('matchapro_users_wilayah_akses')->where('user_id', auth()->user()->id)->get();
+
         $dir_usaha = DB::table('business_perusahaan as bp')
             ->join('area_provinsi as ap', function($join) {
                 $join->on('ap.id', '=', 'bp.provinsi_id')
@@ -169,13 +184,16 @@ class DirektoriUsahaController extends Controller
                 'ap.kode as kdprov', 'akk.kode as kdkab', 'ak.kode as kdkec', 'akd.kode as kddesa',
                 'ap.nama as nmprov', 'akk.nama as nmkab', 'ak.nama as nmkec', 'akd.nama as nmdesa',
                 'bp.id as perusahaan_id', 'ss.nama as status_perusahaan', 'ss.id as status_perusahaan_id'
-            )            
-            ->when($viewProvinsi, function($query) {
-                return $query->where('bp.provinsi_id', auth()->user()->provinsi_id);
-            })
-            ->when($viewKabupaten, function($query) {
-                return $query->where('bp.kabupaten_kota_id', auth()->user()->kabupaten_kota_id);
+            )  
+            ->when($viewProvinsi || $viewKabupaten, function($query) use ($wilayahAkses) {
+                return $query->whereIn('bp.kabupaten_kota_id', $wilayahAkses->pluck('kabupaten_kota_id'));
             });
+            // ->when($viewProvinsi, function($query) {
+            //     return $query->where('bp.provinsi_id', auth()->user()->provinsi_id);
+            // })
+            // ->when($viewKabupaten, function($query) {
+            //     return $query->where('bp.kabupaten_kota_id', auth()->user()->kabupaten_kota_id);
+            // });
             
         return $dir_usaha;
     }    
@@ -333,6 +351,13 @@ class DirektoriUsahaController extends Controller
 
     public function exportExcel(Request $request)
     {
+        $wilayahAkses = DB::table('matchapro_users_wilayah_akses')->where('user_id', auth()->user()->id)->get();
+        if(auth()->user()->getRoleNames()[0] != 'PUSAT') {            
+            if (!$wilayahAkses->pluck('kabupaten_kota_id')->contains($request->kabupaten)) {
+                return redirect()->route('error_page.index');
+            }
+        }
+        
         $filename = 'direktori_usaha_' . date('Y-m-d_His') . '.xlsx';
 
         return (new FastExcel($this->exportData($request)))
@@ -340,7 +365,7 @@ class DirektoriUsahaController extends Controller
     }
 
     private function exportData($request)
-    {
+    {        
         // Query your data in chunks to avoid memory issues
         $query = DB::table('business_perusahaan as bp')
             ->leftJoin('area_provinsi as ap', 'ap.id', '=', 'bp.provinsi_id')

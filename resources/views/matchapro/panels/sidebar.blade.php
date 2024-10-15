@@ -108,6 +108,14 @@
                 </a>
             </li>
 
+            <li class="nav-item {{ Route::currentRouteName() == 'user.list' ? 'active text-white' : '' }}">
+                <a href="{{ route('user.list') }}" class="d-flex align-items-center" target="">
+                    <i data-feather="users"></i>
+                    <span class="menu-title text-truncate">User</span>
+                </a>    
+            </li>
+
+
         </ul>
     </div>
 </div>

@@ -14,6 +14,7 @@ use App\Http\Controllers\ProfilingMandiriController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MasterWilayahController;
 use App\Http\Controllers\MasterKBLi;
+use App\Http\Controllers\UserController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -32,7 +33,7 @@ Route::post('login', [AuthController::class, 'login'])->name('login.post');
 
 
 Route::middleware(['sso-bps'])->group(function () {
-    Route::get('/', [HomeController::class, 'index'])->name('home');
+    Route::get('/', [HomeController::class, 'index']);
     Route::get('home', [HomeController::class, 'index'])->name('home');
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
@@ -89,6 +90,13 @@ Route::middleware(['sso-bps'])->group(function () {
     Route::post('wil-kabupaten-kota', [MasterWilayahController::class, 'getKabupaten'])->name('wil-kabupaten-kota');
     Route::post('master-kbli', [MasterKBLI::class, 'getMasterKBLI'])->name('master-kbli');
     Route::post('check-idsbr', [FormUpdateUsahaController::class, 'checkIDSBR'])->name('check-idsbr');
+
+    Route::get('user/list', [UserController::class, 'index'])->name('user.list');
+    Route::get('user/data', [UserController::class, 'getData'])->name('user.list.data');
+    Route::post('user/detail', [UserController::class, 'getDetailUser'])->name('user.list.detail');
+    Route::post('user/update', [UserController::class, 'updateUser'])->name('user.list.update');
+    Route::post('user/update-wilayah', [UserController::class, 'updateUserWilayah'])->name('user.list.update.wilayah');
+    Route::post('user/wilayah-akses', [UserController::class, 'getWilayahAksesUser'])->name('user.wilayah.akses');
 });
 
 //End Matcha Pro
