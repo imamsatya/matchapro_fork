@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use DB;
 use Auth;
 use App\Models\User;
+use Illuminate\Support\Facades\Crypt;
 
 class ProfilingController extends Controller
 {
@@ -210,6 +211,11 @@ class ProfilingController extends Controller
             $total = $query->count();
 
             $data = $query->offset($start)->limit($length)->get();
+            $data = $data->map(function ($item) {
+                $item->perusahaan_id = Crypt::encrypt($item->perusahaan_id);
+                return $item;
+            });
+            
             
             return response()->json([
                 'draw' => intval($request->input('draw')),

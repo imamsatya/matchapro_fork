@@ -179,7 +179,7 @@
                                                     <th>Wilayah</th>
                                                     <th>Status</th>
                                                     <th>Updated At</th>
-                                                    <th>Action</th>
+                                                    <th>Aksi</th>
                                                 </tr>
                                             </thead>
                                             <tfoot>
@@ -194,7 +194,7 @@
                                                     <th>Wilayah</th>
                                                     <th>Status</th>
                                                     <th>Updated At</th>
-                                                    <th>Action</th>
+                                                    <th>Aksi</th>
                                                 </tr>
                                             </tfoot>
                                             <tbody>
@@ -327,7 +327,7 @@
                                                     <th>Updated At</th>
                                                     <th>Updated By</th>
                                                     <th>Tipe Update</th>
-                                                    <th>Action</th>
+                                                    <th>Aksi</th>
                                                 </tr>
                                             </thead>
                                             <tfoot>
@@ -340,7 +340,7 @@
                                                     <th>Updated At</th>
                                                     <th>Updated By</th>
                                                     <th>Tipe Update</th>
-                                                    <th>Action</th>
+                                                    <th>Aksi</th>
                                                 </tr>
                                             </tfoot>
                                             <tbody>
@@ -711,7 +711,7 @@
                     },
                     {
                         data: null, // This column doesn't correspond to a field in the dataset
-                        title: 'Action',
+                        title: 'Aksi',
                         orderable: false, // Disable ordering on this column
                         searchable: false, // Disable searching on this column
                         render: function(data, type, row) {
@@ -954,7 +954,7 @@
                     },
                     {
                         data: null, // This column doesn't correspond to a field in the dataset
-                        title: 'Action',
+                        title: 'Aksi',
                         orderable: false, // Disable ordering on this column
                         searchable: false, // Disable searching on this column
                         render: function(data, type, row) {
@@ -985,16 +985,16 @@
 
                                         ${(row.action_type === 'CREATE' && 
                                         (row.status_form === 'OPEN' || row.status_form === 'DRAFT' || row.status_form === 'REJECTED')) ? `
-                                                                                                            <button type="button" class="cancel-button btn btn-icon btn-flat-danger btn-lg" 
-                                                                                                                    data-url="{{ route('form_update_usaha.cancel', ['perusahaan_id' => '__PERUSAHAAN_ID__', 'alokasi_id' => '__ALOKASI_ID__']) }}" 
-                                                                                                                    data-perusahaan_id="${row.perusahaan_id}" 
-                                                                                                                    data-alokasi_id="${row.id}" 
-                                                                                                                    data-bs-toggle="tooltip" 
-                                                                                                                    data-bs-placement="top" 
-                                                                                                                    title="Cancel">
-                                                                                                                <i data-feather="x" width="40" height="40"></i>
-                                                                                                            </button>
-                                                                                                        ` : ``}
+                                                                                                                                    <button type="button" class="cancel-button btn btn-icon btn-flat-danger btn-lg" 
+                                                                                                                                            data-url="{{ route('form_update_usaha.cancel', ['perusahaan_id' => '__PERUSAHAAN_ID__', 'alokasi_id' => '__ALOKASI_ID__']) }}" 
+                                                                                                                                            data-perusahaan_id="${row.perusahaan_id}" 
+                                                                                                                                            data-alokasi_id="${row.id}" 
+                                                                                                                                            data-bs-toggle="tooltip" 
+                                                                                                                                            data-bs-placement="top" 
+                                                                                                                                            title="Cancel">
+                                                                                                                                        <i data-feather="x" width="40" height="40"></i>
+                                                                                                                                    </button>
+                                                                                                                                ` : ``}
                                     `;
                         },
 

@@ -43,6 +43,7 @@ Route::middleware(['sso-bps'])->group(function () {
     //Progress Profiling
     //Wilayah
     Route::get('profiling/progress/wilayah', [ProgressProfilingController::class, 'wilayah_index'])->name('progress_wilayah.index');
+    Route::get('profiling/progress/status_statistics', [ProgressProfilingController::class, 'getStatusStatistics'])->name('progress_wilayah.status_statistics');
     //Profiler
     Route::get('profiling/progress/profiler', [ProgressProfilingController::class, 'profiler_index'])->name('progress_profiler.index');
 

@@ -94,8 +94,8 @@
                 <div class="user-nav d-sm-flex d-none">
                     <span class="user-name fw-bolder">
                         @if (Auth::check())
-                            @if(session('userSSO'))
-                                {{ session('userSSO')->getName() }}
+                            @if (session('userSSO'))
+                                {{ session('userSSO')->get() }}
                             @else
                                 {{ Auth::user()->nama }}
                             @endif
@@ -117,14 +117,14 @@
                     </span>
                 </div>
                 <span class="avatar">
-                    @if(session('userSSO'))                    
-                    <img class="round" 
-                        src="{{ session('userSSO')->getUrlFoto() }}" alt="avatar" height="40" width="40">
-                    <span class="avatar-status-online"></span>
+                    @if (session('userSSO'))
+                        <img class="round" src="{{ session('userSSO')->getUrlFoto() }}" alt="avatar" height="40"
+                            width="40">
+                        <span class="avatar-status-online"></span>
                     @else
-                    <img class="round" 
-                        src="{{ asset('images/logo/logoFRS.png') }}" alt="avatar" height="40" width="40">
-                    <span class="avatar-status-online"></span>
+                        <img class="round" src="{{ asset('images/logo/logoFRS.png') }}" alt="avatar" height="40"
+                            width="40">
+                        <span class="avatar-status-online"></span>
                     @endif
                 </span>
             </a>
