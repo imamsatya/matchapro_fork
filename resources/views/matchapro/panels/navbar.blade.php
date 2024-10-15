@@ -104,7 +104,7 @@
                         @endif
                     </span>
                     <span class="user-status">
-                        @if (Auth::user()->getRoleNames()->isNotEmpty())
+                       {{-- @if (Auth::user()->getRoleNames()->isNotEmpty())
                             @foreach (Auth::user()->getRoleNames() as $role)
                                 <span>{{ $role }}</span>
                                 @if (!$loop->last)
@@ -113,7 +113,8 @@
                             @endforeach
                         @else
                             <span>No Roles Assigned</span>
-                        @endif
+                        @endif --}}
+                        {{ Auth::user()->username }}
                     </span>
                 </div>
                 <span class="avatar">

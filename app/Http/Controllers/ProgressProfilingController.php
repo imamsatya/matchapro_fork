@@ -152,11 +152,12 @@ class ProgressProfilingController extends Controller
 
     public function profiler_index()
     {
-        $pageConfigs = ['sidebarCollapsed' => false];
-        $breadcrumbs = [
-            ['link' => "home", 'name' => "Home"], ['link' => "javascript:void(0)", 'name' => "Layouts"], ['name' => "Collapsed menu"]
-        ];
-        return view('/matchapro/page/progress_profiling_profiler', ['breadcrumbs' => $breadcrumbs, 'pageConfigs' => $pageConfigs]);
+        return redirect()->route('profiling.index');
+        // $pageConfigs = ['sidebarCollapsed' => false];
+        // $breadcrumbs = [
+        //     ['link' => "home", 'name' => "Home"], ['link' => "javascript:void(0)", 'name' => "Layouts"], ['name' => "Collapsed menu"]
+        // ];
+        // return view('/matchapro/page/progress_profiling_profiler', ['breadcrumbs' => $breadcrumbs, 'pageConfigs' => $pageConfigs]);
 
     }
 

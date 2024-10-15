@@ -35,13 +35,13 @@
                 </a>
             </li>
 
-            <li class="nav-item {{ Route::currentRouteName() == 'dashboard.index' ? 'active text-white' : '' }}">
+            <!-- <li class="nav-item {{ Route::currentRouteName() == 'dashboard.index' ? 'active text-white' : '' }}">
                 <a href="{{ route('dashboard.index') }}" class="d-flex align-items-center" target="">
                     <i data-feather="grid"></i>
                     <span class="menu-title text-truncate">Dashboard</span>
 
                 </a>
-            </li>
+            </li> -->
 
             <li
                 class="nav-item {{ Route::currentRouteName() == 'progress_wilayah.index' || Route::currentRouteName() == 'progress_profiler.index' ? 'open' : '' }}">
@@ -108,12 +108,14 @@
                 </a>
             </li>
 
+            @if(auth()->user()->getRoleNames()[0] == 'PUSAT-ADMIN')
             <li class="nav-item {{ Route::currentRouteName() == 'user.list' ? 'active text-white' : '' }}">
                 <a href="{{ route('user.list') }}" class="d-flex align-items-center" target="">
                     <i data-feather="users"></i>
                     <span class="menu-title text-truncate">User</span>
                 </a>    
             </li>
+            @endif
 
 
         </ul>

@@ -352,12 +352,14 @@ class DirektoriUsahaController extends Controller
     public function exportExcel(Request $request)
     {
         $wilayahAkses = DB::table('matchapro_users_wilayah_akses')->where('user_id', auth()->user()->id)->get();
-        if(auth()->user()->getRoleNames()[0] != 'PUSAT') {            
+        $role_user = auth()->user()->getRoleNames()[0]; // PUSAT-ADMIN, dst
+        $level_role_user = explode('-' , $role_user)[0]; // PUSAT, dst
+        if($level_role_user != 'PUSAT') {            
             if (!$wilayahAkses->pluck('kabupaten_kota_id')->contains($request->kabupaten)) {
                 return redirect()->route('error_page.index');
             }
         }
-        
+
         $filename = 'direktori_usaha_' . date('Y-m-d_His') . '.xlsx';
 
         return (new FastExcel($this->exportData($request)))

@@ -605,7 +605,7 @@
 
                                         
 
-                                        ${(row.action_type === 'CREATE' && 
+                                        ${((row.action_type === 'CREATE' || row.action_type == 'UPDATE' ) && 
                                         (row.status_form === 'OPEN' || row.status_form === 'DRAFT' || row.status_form === 'REJECTED')) ? `
                                                                                                                                                 <button type="button" class="cancel-button btn btn-icon btn-flat-danger btn-lg" 
                                                                                                                                                         data-url="{{ route('form_update_usaha.cancel', ['perusahaan_id' => '__PERUSAHAAN_ID__', 'alokasi_id' => '__ALOKASI_ID__']) }}" 
@@ -648,7 +648,7 @@
                 // Show confirmation dialog
                 Swal.fire({
                     title: 'Apakah Anda Yakin?',
-                    text: "Apakah anda yakin akan membatalkan penambahan data?",
+                    text: "Apakah anda yakin akan membatalkan proses profiling (update/create) data?",
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#3085d6',
@@ -686,7 +686,7 @@
                                 // Show success message
                                 Swal.fire({
                                     title: 'Cancelled!',
-                                    text: 'Penambahan data berhasil dibatalkan',
+                                    text: 'Profilng (update/create) berhasil dibatalkan',
                                     icon: 'success'
                                 });
 
