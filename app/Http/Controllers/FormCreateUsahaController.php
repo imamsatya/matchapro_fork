@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Str; // Import the Str facade
+use Illuminate\Support\Facades\Crypt;
 
 use DB;
 use Auth;
@@ -237,6 +238,8 @@ class FormCreateUsahaController extends Controller
             'updated_at' => now(), // Optional: Add timestamps
             'validator'=>null
         ]);
+
+        $perusahaanIdgenerated = Crypt::encrypt($perusahaanIdgenerated);
 
          // Return JSON response with redirection URL
         return response()->json([
