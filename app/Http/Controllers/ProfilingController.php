@@ -7,6 +7,9 @@ use DB;
 use Auth;
 use App\Models\User;
 use Illuminate\Support\Facades\Crypt;
+use Box\Spout\Writer\Common\Creator\WriterEntityFactory;
+use Box\Spout\Common\Entity\Row;
+use Rap2hpoutre\FastExcel\FastExcel;
 
 class ProfilingController extends Controller
 {
@@ -174,7 +177,7 @@ class ProfilingController extends Controller
             }
         }
 
-        
+       
         $countGroup = (clone $query)
             ->select('map.status_form', DB::raw('count(*) as total'))
             ->groupBy('map.status_form')
@@ -185,7 +188,7 @@ class ProfilingController extends Controller
         if ($status_form) {
             $query->where('map.status_form', $status_form);
         }
-
+            $query = $query->orderBy('map.updated_at', 'desc');
             // Apply pagination and ordering
             $length = $request->input('length');
             $start = $request->input('start');
@@ -210,6 +213,7 @@ class ProfilingController extends Controller
             $query->orderBy($columns[$orderColumn], $orderDirection);
             $total = $query->count();
 
+          
             $data = $query->offset($start)->limit($length)->get();
             $data = $data->map(function ($item) {
                 $item->perusahaan_id = Crypt::encrypt($item->perusahaan_id);
@@ -453,77 +457,284 @@ class ProfilingController extends Controller
     public function cancelData(Request $request){
         
         $user = auth()->user();
-       // Use a database transaction
-    DB::beginTransaction();
+        // Use a database transaction
+        DB::beginTransaction();
 
-    try {
-        // Update status_form to "CANCELED" in matchapro_alokasi_profiling
-        DB::table('matchapro_alokasi_profiling')
-            ->where('id', $request->alokasi_id)
-            ->where('perusahaan_id', $request->perusahaan_id)
-            ->update([
-                'status_form' => 'CANCELED',
-                'updated_at' => now()
+        try {
+            // Update status_form to "CANCELED" in matchapro_alokasi_profiling
+            DB::table('matchapro_alokasi_profiling')
+                ->where('id', $request->alokasi_id)
+                ->where('perusahaan_id', $request->perusahaan_id)
+                ->update([
+                    'status_form' => 'CANCELED',
+                    'updated_at' => now()
+                ]);
+
+            // Select the latest record from matchapro_temporary_update_profiling
+            $record = DB::table('matchapro_temporary_update_profiling')
+                ->where('alokasi_profiling_id', $request->alokasi_id)
+                ->orderBy('updated_at', 'desc')
+                ->first();
+
+            // Check if a record was found
+            if ($record) {
+                // Insert a new row into matchapro_temporary_update_profiling with status_form "CANCELED"
+                DB::table('matchapro_temporary_update_profiling')->insert([
+                    'alokasi_profiling_id' => $record->alokasi_profiling_id,
+                    'nama_usaha' => $record->nama_usaha,
+                    'nama_komersial' => $record->nama_komersial,
+                    'provinsi_id' => $record->provinsi_id,
+                    'kabupaten_kota_id' => $record->kabupaten_kota_id,
+                    'kecamatan_id' => $record->kecamatan_id,
+                    'kelurahan_desa_id' => $record->kelurahan_desa_id,
+                    'sls_deskripsi' => $record->sls_deskripsi,
+                    'alamat' => $record->alamat,
+                    'kodepos' => $record->kodepos,
+                    'telp' => $record->telp,
+                    'no_wa' => $record->no_wa,
+                    'email' => $record->email,
+                    'website' => $record->website,
+                    'latitude' => $record->latitude,
+                    'longitude' => $record->longitude,
+                    'kbli' => $record->kbli,
+                    'kategori' => $record->kategori,
+                    'kegiatan_utama' => $record->kegiatan_utama,
+                    'jaringan_usaha_id' => $record->jaringan_usaha_id,
+                    'bentuk_badan_usaha_id' => $record->bentuk_badan_usaha_id,
+                    'deskripsi_produk_usaha' => $record->deskripsi_produk_usaha,
+                    'jenis_kepemilikan_usaha' => $record->jenis_kepemilikan_usaha,
+                    'tahun_berdiri' => $record->tahun_berdiri,
+                    'keterangan_submitted' => $record->keterangan_submitted,
+                    'keterangan_approved' => $record->keterangan_approved,
+                    'keterangan_rejected' => $record->keterangan_rejected,
+                    'status_perusahaan_id' => $record->status_perusahaan_id,
+                    'status_form' => 'CANCELED',  // Set status_form to "CANCELED"
+                    'created_at' => $record->created_at, // Keep original created_at value
+                    'updated_at' => now(),          // Update updated_at to current timestamp
+                    'updated_by' => $user->id,
+                    'sumber_profiling' => $record->sumber_profiling,
+                    'provinsi_pindah' => $record->provinsi_pindah,
+                    'kabupaten_kota_pindah' => $record->kabupaten_kota_pindah,
+                    'idsbr_master' => $record->idsbr_master,
+                    'validator' => $record->validator,
+                ]);
+            }
+
+            // Commit the transaction
+            DB::commit();
+            return response()->json(['message' => 'Data canceled successfully.'], 200);
+        } catch (\Exception $e) {
+            // Roll back the transaction on failure
+            DB::rollBack();
+            return response()->json(['message' => 'Failed to cancel data. Error: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function exportExcel(Request $request){
+        
+            $periode_id = $request->input('periode_id');
+            $filename = 'profiling_periodik_' . date('Y-m-d_His') . '.xlsx';
+            if($periode_id == env('PERIODE_PROFILING_MANDIRI')){
+                $filename = 'profiling_mandiri_' . date('Y-m-d_His') . '.xlsx';
+            }
+
+            return (new FastExcel($this->exportData($request)))
+            ->download($filename);
+
+    }
+
+    private function exportData($request)
+    {
+        $status_form = $request->input('status_form');
+        
+        $periode_id = $request->input('periode_id');
+        
+        $user = auth()->user();
+        
+        $snapshot_id = DB::table('area_provinsi')->max('snapshot_id');
+        
+        //Bukan Periode Mandiri
+        if ($periode_id != env('PERIODE_PROFILING_MANDIRI')) {
+            $query = DB::table('matchapro_alokasi_profiling as map')
+            ->join('business_perusahaan as bp', 'map.perusahaan_id', '=', 'bp.id')
+            ->join('area_provinsi as ap', function ($join) use ($snapshot_id) {
+                $join->on('ap.id', '=', 'bp.provinsi_id')
+                    ->where('ap.snapshot_id', '=', $snapshot_id);
+            })
+            ->join('area_kabupaten_kota as akk', 'akk.id', '=', 'bp.kabupaten_kota_id')
+            ->leftjoin('area_kecamatan as ak', 'ak.id', '=', 'bp.kecamatan_id')
+            ->leftjoin('area_kelurahan_desa as akd', 'akd.id', '=', 'bp.kelurahan_desa_id')
+            ->where('map.periode_id', $periode_id)
+            ->where('map.user_id', $user->id)
+            ->select([
+                'map.id', 
+                'bp.id as perusahaan_id',
+                'bp.kode', 
+                'bp.nama', 
+                'bp.alamat', 
+                'bp.provinsi_id',
+                'ap.kode as provinsi_kode',
+                'ap.nama as provinsi_nama',
+                'bp.kabupaten_kota_id', 
+                'akk.kode as kabupaten_kota_kode',
+                'akk.nama as kabupaten_kota_nama',
+                'bp.kecamatan_id', 
+                'ak.kode as kecamatan_kode',
+                'ak.nama as kecamatan_nama',
+                'bp.kelurahan_desa_id',
+                'akd.kode as kelurahan_desa_kode',
+                'akd.nama as kelurahan_desa_nama',
+                'map.status_form',
+                'map.updated_at'
             ]);
 
-        // Select the latest record from matchapro_temporary_update_profiling
-        $record = DB::table('matchapro_temporary_update_profiling')
-            ->where('alokasi_profiling_id', $request->alokasi_id)
-            ->orderBy('updated_at', 'desc')
-            ->first();
+        
+            // Fetch data based on the selected periode
+            // Apply search filter if provided by DataTables
+            if ($request->has('search') && $request->search['value'] != '') {
+                $search = $request->search['value'];
+                $query->where(function ($q) use ($search) {
+                    $q->where('bp.nama', 'like', "%$search%")
+                    ->orWhere('bp.kode', 'like', "%$search%")
+                    ->orWhere('bp.alamat', 'like', "%$search%")
+                    ->orWhere('bp.provinsi_id', 'like', "%$search%")
+                    ->orWhere('akk.kode', 'like', "%$search%")
+                    ->orWhere('akk.nama', 'like', "%$search%")
+                    ->orWhere('ak.kode', 'like', "%$search%")
+                    ->orWhere('ak.nama', 'like', "%$search%")
+                    ->orWhere('akd.kode', 'like', "%$search%")
+                    ->orWhere('akd.nama', 'like', "%$search%")
+                    ->orWhere('map.status_form', 'like', "%$search%")
+                    ->orWhere('map.updated_at', 'like', "%$search%");
+                });
+            }
 
-        // Check if a record was found
-        if ($record) {
-            // Insert a new row into matchapro_temporary_update_profiling with status_form "CANCELED"
-            DB::table('matchapro_temporary_update_profiling')->insert([
-                'alokasi_profiling_id' => $record->alokasi_profiling_id,
-                'nama_usaha' => $record->nama_usaha,
-                'nama_komersial' => $record->nama_komersial,
-                'provinsi_id' => $record->provinsi_id,
-                'kabupaten_kota_id' => $record->kabupaten_kota_id,
-                'kecamatan_id' => $record->kecamatan_id,
-                'kelurahan_desa_id' => $record->kelurahan_desa_id,
-                'sls_deskripsi' => $record->sls_deskripsi,
-                'alamat' => $record->alamat,
-                'kodepos' => $record->kodepos,
-                'telp' => $record->telp,
-                'no_wa' => $record->no_wa,
-                'email' => $record->email,
-                'website' => $record->website,
-                'latitude' => $record->latitude,
-                'longitude' => $record->longitude,
-                'kbli' => $record->kbli,
-                'kategori' => $record->kategori,
-                'kegiatan_utama' => $record->kegiatan_utama,
-                'jaringan_usaha_id' => $record->jaringan_usaha_id,
-                'bentuk_badan_usaha_id' => $record->bentuk_badan_usaha_id,
-                'deskripsi_produk_usaha' => $record->deskripsi_produk_usaha,
-                'jenis_kepemilikan_usaha' => $record->jenis_kepemilikan_usaha,
-                'tahun_berdiri' => $record->tahun_berdiri,
-                'keterangan_submitted' => $record->keterangan_submitted,
-                'keterangan_approved' => $record->keterangan_approved,
-                'keterangan_rejected' => $record->keterangan_rejected,
-                'status_perusahaan_id' => $record->status_perusahaan_id,
-                'status_form' => 'CANCELED',  // Set status_form to "CANCELED"
-                'created_at' => $record->created_at, // Keep original created_at value
-                'updated_at' => now(),          // Update updated_at to current timestamp
-                'updated_by' => $user->id,
-                'sumber_profiling' => $record->sumber_profiling,
-                'provinsi_pindah' => $record->provinsi_pindah,
-                'kabupaten_kota_pindah' => $record->kabupaten_kota_pindah,
-                'idsbr_master' => $record->idsbr_master,
-                'validator' => $record->validator,
-            ]);
         }
 
-        // Commit the transaction
-        DB::commit();
-        return response()->json(['message' => 'Data canceled successfully.'], 200);
-    } catch (\Exception $e) {
-        // Roll back the transaction on failure
-        DB::rollBack();
-        return response()->json(['message' => 'Failed to cancel data. Error: ' . $e->getMessage()], 500);
+        //Periode Mandiri
+        if($periode_id == env('PERIODE_PROFILING_MANDIRI')){
+
+            $query = DB::table('matchapro_alokasi_profiling as map')
+                ->join('matchapro_temporary_update_profiling as mtup', function ($join) {
+                    $join->on('map.id', '=', 'mtup.alokasi_profiling_id')
+                        ->whereRaw('mtup.updated_at = (SELECT MAX(mtup_inner.updated_at) FROM matchapro_temporary_update_profiling as mtup_inner WHERE mtup_inner.alokasi_profiling_id = map.id)');
+                })
+                ->join('area_provinsi as ap', function ($join) use ($snapshot_id) {
+                    $join->on('ap.id', '=', 'mtup.provinsi_id')
+                        ->where('ap.snapshot_id', '=', $snapshot_id);
+                })
+                ->join('area_kabupaten_kota as akk', 'akk.id', '=', 'mtup.kabupaten_kota_id')
+                ->leftJoin('area_kecamatan as ak', 'ak.id', '=', 'mtup.kecamatan_id')
+                ->leftJoin('area_kelurahan_desa as akd', 'akd.id', '=', 'mtup.kelurahan_desa_id')
+                ->join('matchapro_users as mu', 'mu.id', '=', 'map.user_id')
+                ->leftJoin('matchapro_users as mu_updated', 'mu_updated.id', '=', 'mtup.updated_by') // New join
+                ->where('map.periode_id', $periode_id)
+                ->where('map.user_id', $user->id)
+                ->select([
+                    'map.id', 
+                    'map.perusahaan_id as perusahaan_id',
+                    'map.idsbr as kode', 
+                    'mtup.nama_usaha as nama', 
+                    'mtup.alamat', 
+                    'mtup.provinsi_id',
+                    'ap.kode as provinsi_kode',
+                    'ap.nama as provinsi_nama',
+                    'mtup.kabupaten_kota_id', 
+                    'akk.kode as kabupaten_kota_kode',
+                    'akk.nama as kabupaten_kota_nama',
+                    'mtup.kecamatan_id', 
+                    'ak.kode as kecamatan_kode',
+                    'ak.nama as kecamatan_nama',
+                    'mtup.kelurahan_desa_id',
+                    'akd.kode as kelurahan_desa_kode',
+                    'akd.nama as kelurahan_desa_nama',
+                    'map.action_type',
+                    'map.status_form',
+                    'map.updated_at',
+                    'mu_updated.nama as updated_by_nama', // Select the updated user's name or any other details you need
+                    'mu_updated.id as updated_by_id'
+                ]);
+
+
+                        
+
+            if ($request->has('search') && $request->search['value'] != '') {
+                $search = $request->search['value'];
+                $query->where(function ($q) use ($search) {
+                    $q->where('mtup.nama_usaha', 'like', "%$search%")
+                    ->orWhere('map.idsbr', 'like', "%$search%")
+                    ->orWhere('mtup.alamat', 'like', "%$search%")
+                    ->orWhere('mtup.provinsi_id', 'like', "%$search%")
+                    ->orWhere('akk.kode', 'like', "%$search%")
+                    ->orWhere('akk.nama', 'like', "%$search%")
+                    ->orWhere('ak.kode', 'like', "%$search%")
+                    ->orWhere('ak.nama', 'like', "%$search%")
+                    ->orWhere('akd.kode', 'like', "%$search%")
+                    ->orWhere('akd.nama', 'like', "%$search%")
+                    ->orWhere('map.status_form', 'like', "%$search%")
+                    ->orWhere('map.updated_at', 'like', "%$search%")
+                    ->orWhere('mu_updated.nama', 'like', "%$search%");
+                    
+                });
+            }
+        }
+
+        if ($status_form) {
+            $query->where('map.status_form', $status_form);
+        }
+            $query = $query->orderBy('map.updated_at', 'desc');
+
+            
+
+        return $this->generateRows($query, $periode_id);
     }
+
+    private function generateRows($query, $periode_id)
+    {
+        if($periode_id != env('PERIODE_PROFILING_MANDIRI')){
+            // Yield the header row
+            yield [
+                'IDSBR', 'Nama Usaha', 'Alamat', 'Kode Wilayah', 'Nama Wilayah', 'Status Perusahaan', 'Updated At'
+                // Add more columns as needed
+            ];
+
+            foreach ($query->cursor() as $record) {
+                yield [
+                    $record->kode,
+                    $record->nama,
+                    $record->alamat,
+                    $record->provinsi_kode.'-'. $record->kabupaten_kota_kode. '-'.$record->kecamatan_kode.'-'.$record->kelurahan_desa_kode,
+                    $record->provinsi_nama.'-'. $record->kabupaten_kota_nama. '-'.$record->kecamatan_nama.'-'.$record->kelurahan_desa_nama,
+                    $record->status_form,
+                    $record->updated_at,
+                    // Add more fields as needed
+                ];
+            }
+        }
+        
+
+        if($periode_id == env('PERIODE_PROFILING_MANDIRI')){
+            // Yield the header row
+            yield [
+                'IDSBR', 'Nama Usaha', 'Alamat', 'Kode Wilayah', 'Nama Wilayah', 'Status Perusahaan', 'Upadated At', 'Updated By'
+                // Add more columns as needed
+            ];
+
+            foreach ($query->cursor() as $record) {
+                yield [
+                    $record->kode,
+                    $record->nama,
+                    $record->alamat,
+                    $record->provinsi_kode.'-'. $record->kabupaten_kota_kode. '-'.$record->kecamatan_kode.'-'.$record->kelurahan_desa_kode,
+                    $record->provinsi_nama.'-'. $record->kabupaten_kota_nama. '-'.$record->kecamatan_nama.'-'.$record->kelurahan_desa_nama,
+                    $record->status_form,
+                    $record->updated_at,
+                    $record->updated_by_nama,
+                    // Add more fields as needed
+                ];
+            }
+        }
+       
     }
 
     /**

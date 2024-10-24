@@ -2,26 +2,56 @@
 
 @section('title', 'Home')
 
+@section('page-style')
+    <style>
+        .h2-responsive {
+            font-size: 48px;
+        }
+
+        @media (max-width: 576px) {
+            .h2-responsive {
+                font-size: 28px;
+            }
+        }
+
+        .h4-responsive {
+            font-size: 28px;
+        }
+
+        @media (max-width: 576px) {
+            .h4-responsive {
+                font-size: 16px;
+            }
+        }
+    </style>
+@endsection
+
 @section('content')
     {{-- Welcome --}}
     <section class="welcome-section py-5 text-center" style="background: #78b34d; color: #fff;">
-        <div class="container animate__animated animate__fadeInUp">
+        <div class=" animate__animated animate__fadeInUp">
             <div class="card-body text-center">
-                {{-- <div class="avatar avatar-xl shadow" style="background:rgba(72, 139, 24, 0.7);">
-                    <div class="avatar-content">
-                        <i data-feather="award" class="font-large-1"></i>
-                    </div>
-                </div> --}}
+                <!-- Avatar Section -->
+                <!-- Uncomment this section if you'd like to add an icon back -->
+                <!-- <div class="avatar avatar-xl shadow mb-4 d-none d-md-inline-flex" style="background:rgba(72, 139, 24, 0.7);">
+                                                                                                                        <div class="avatar-content">
+                                                                                                                            <i data-feather="award" class="font-large-1"></i>
+                                                                                                                        </div>
+                                                                                                                    </div> -->
+
+                <!-- Heading and Text -->
                 <div class="text-center">
-                    <h1 class="mb-1 text-white" style="font-size: 48px;">Selamat Datang di MatchaPro</h1>
-                    <p class="card-text m-auto w-75" style="font-size: 18px;">
+                    <h1 class="mb-2 text-white" style="font-size: 2.5rem;">
+                        Selamat Datang di MatchaPro
+                    </h1>
+                    <p class="card-text mx-auto" style="max-width: 90%; font-size: 1rem;">
                         Everything is so Matcha better with you
                     </p>
                 </div>
             </div>
-
         </div>
     </section>
+
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" style="margin-top: -12px;">
         <path fill="#78b34d" fill-opacity="1"
             d="M0,160L26.7,138.7C53.3,117,107,75,160,90.7C213.3,107,267,181,320,197.3C373.3,213,427,171,480,154.7C533.3,139,587,149,640,133.3C693.3,117,747,75,800,80C853.3,85,907,139,960,170.7C1013.3,203,1067,213,1120,208C1173.3,203,1227,181,1280,176C1333.3,171,1387,181,1413,186.7L1440,192L1440,0L1413.3,0C1386.7,0,1333,0,1280,0C1226.7,0,1173,0,1120,0C1066.7,0,1013,0,960,0C906.7,0,853,0,800,0C746.7,0,693,0,640,0C586.7,0,533,0,480,0C426.7,0,373,0,320,0C266.7,0,213,0,160,0C106.7,0,53,0,27,0L0,0Z">
@@ -32,14 +62,14 @@
 
     <!-- About Section -->
     <section class="about-section py-5">
-        <div class="container">
+        <div class="">
             <div class="row align-items-center animate__animated animate__fadeInLeft">
                 <div class="col-md-6 d-flex justify-content-center">
                     <img style="transform: scaleX(-1);" src="{{ asset('images/illustration/pricing-illustration.svg') }}"
                         alt="About MatchaPro" class="img-fluid">
                 </div>
-                <div class="col-md-6">
-                    <h2 class="mb-3" style="font-size: 48px; color: #78b34d;"><i class="fas fa-info-circle"></i> Tentang
+                <div class="col-md-6 mt-2">
+                    <h2 class="mb-3 h2-responsive" style=" color: #78b34d;"><i class="fas fa-info-circle"></i> Tentang
                         MatchaPro</h2>
 
                     <div class="card-text" style="font-size: 18px;">
@@ -67,8 +97,8 @@
 
     <!-- Goals Section -->
     <section class="goals-section text-center py-5">
-        <div class="container animate__animated animate__fadeInUp">
-            <h2 style="font-size: 48px; color: #78b34d;"><i class="fas fa-bullseye"></i> Tujuan
+        <div class=" animate__animated animate__fadeInUp">
+            <h2 class="h2-responsive" style="color: #78b34d;"><i class="fas fa-bullseye"></i> Tujuan
                 MatchaPro</h2>
             <p class="mb-4" style="font-size: 18px;">Membantu SBR dalam memperbaharui dan melengkapi data profil
                 usaha/perusahaan.</p>
@@ -76,8 +106,8 @@
                 <div class="col-md-6">
                     <div class="card shadow-sm mb-4" style="border-left: 4px solid #78b34d;">
                         <div class="card-body">
-                            <h4 class="card-title " style="font-size: 28px; color: #78b34d;"><i
-                                    class="fas fa-chart-bar"></i> Profil Perusahaan</h4>
+                            <h4 class="card-title h4-responsive " style="color: #78b34d;"><i class="fas fa-chart-bar"></i>
+                                Profil Perusahaan</h4>
                             <br>
                             <img style="transform: scaleX(-1);" src="{{ asset('images/pages/forgot-password.png') }}"
                                 alt="About MatchaPro" class="img-fluid">
@@ -95,7 +125,7 @@
                 <div class="col-md-6">
                     <div class="card shadow-sm mb-4" style="border-left: 4px solid #78b34d;">
                         <div class="card-body">
-                            <h4 class="card-title " style="font-size: 28px; color: #78b34d;"><i class="fas fa-building"></i>
+                            <h4 class="card-title h4-responsive" style="color: #78b34d;"><i class="fas fa-building"></i>
                                 Direktori Perusahaan</h4> <br>
                             <img style="transform: scaleX(-1);height: 253px;"
                                 src="{{ asset('images/pages/coming-soon.svg') }}" alt="About MatchaPro"
@@ -121,8 +151,8 @@
     </svg>
     <!-- Get Started Section -->
     <section class="get-started-section py-5 text-center" style="background: #78b34d; color: #fff;">
-        <div class="container animate__animated animate__fadeInUp">
-            <h1 class="mb-1 text-white" style="font-size: 48px;">Siap Memulai?</h1>
+        <div class=" animate__animated animate__fadeInUp">
+            <h2 class="mb-1 text-white h2-responsive">Siap Memulai?</h2>
             <p class="lead">Langkah mudah untuk memulai profiling data SBR dengan MatchaPro.</p>
             <br>
             <a href="{{ route('profiling.index') }}">

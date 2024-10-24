@@ -168,6 +168,23 @@
                                     <h4 class="card-title">Data Alokasi Profiling</h4>
                                 </div>
                                 <div class="card-body">
+                                    <div class="d-flex justify-content-end">
+                                        <button class="btn btn-outline-secondary dropdown-toggle" type="button"
+                                            id="export-dropdown-periodik" data-bs-toggle="dropdown"
+                                            aria-expanded="false">
+                                            <i data-feather="upload" class="me-25"></i>
+                                            Export
+                                        </button>
+                                        <div class="dropdown-menu" aria-labelledby="export-dropdown-periodik">
+                                            <a class="dropdown-item" href="javascript:void(0);"
+                                                id="export-excel-periodik"><i data-feather="file-text"
+                                                    class="me-25"></i> Excel</a>
+                                            <a class="dropdown-item" href="javascript:void(0);"
+                                                id="export-csv-periodik"><i data-feather="file" class="me-25"></i>
+                                                Csv</a>
+                                        </div>
+                                    </div>
+
                                     {{-- Load Data --}}
                                     <div class="card-datatable">
                                         <table id="data_profiling" class="dt-responsive table " style="width: 100%">
@@ -313,6 +330,21 @@
                                     <h4 class="card-title">Data Profiling Mandiri</h4>
                                 </div>
                                 <div class="card-body">
+                                    <div class="d-flex justify-content-end">
+                                        <button class="btn btn-outline-secondary dropdown-toggle" type="button"
+                                            id="export-dropdown-mandiri" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i data-feather="upload" class="me-25"></i>
+                                            Export
+                                        </button>
+                                        <div class="dropdown-menu" aria-labelledby="export-dropdown-mandiri">
+                                            <a class="dropdown-item" href="javascript:void(0);"
+                                                id="export-excel-mandiri"><i data-feather="file-text" class="me-25"></i>
+                                                Excel</a>
+                                            <a class="dropdown-item" href="javascript:void(0);"
+                                                id="export-csv-mandiri"><i data-feather="file" class="me-25"></i>
+                                                Csv</a>
+                                        </div>
+                                    </div>
                                     {{-- Load Data --}}
                                     <div class="card-datatable">
                                         <table id="data_profiling_mandiri" class="dt-responsive table "
@@ -985,16 +1017,16 @@
 
                                         ${((row.action_type === 'CREATE' || row.action_type == 'UPDATE') && 
                                         (row.status_form === 'OPEN' || row.status_form === 'DRAFT' || row.status_form === 'REJECTED')) ? `
-                                                                                                                                    <button type="button" class="cancel-button btn btn-icon btn-flat-danger btn-lg" 
-                                                                                                                                            data-url="{{ route('form_update_usaha.cancel', ['perusahaan_id' => '__PERUSAHAAN_ID__', 'alokasi_id' => '__ALOKASI_ID__']) }}" 
-                                                                                                                                            data-perusahaan_id="${row.perusahaan_id}" 
-                                                                                                                                            data-alokasi_id="${row.id}" 
-                                                                                                                                            data-bs-toggle="tooltip" 
-                                                                                                                                            data-bs-placement="top" 
-                                                                                                                                            title="Cancel">
-                                                                                                                                        <i data-feather="x" width="40" height="40"></i>
-                                                                                                                                    </button>
-                                                                                                                                ` : ``}
+                                                                                                                                                                                                                                                                                                    <button type="button" class="cancel-button btn btn-icon btn-flat-danger btn-lg" 
+                                                                                                                                                                                                                                                                                                            data-url="{{ route('form_update_usaha.cancel', ['perusahaan_id' => '__PERUSAHAAN_ID__', 'alokasi_id' => '__ALOKASI_ID__']) }}" 
+                                                                                                                                                                                                                                                                                                            data-perusahaan_id="${row.perusahaan_id}" 
+                                                                                                                                                                                                                                                                                                            data-alokasi_id="${row.id}" 
+                                                                                                                                                                                                                                                                                                            data-bs-toggle="tooltip" 
+                                                                                                                                                                                                                                                                                                            data-bs-placement="top" 
+                                                                                                                                                                                                                                                                                                            title="Cancel">
+                                                                                                                                                                                                                                                                                                        <i data-feather="x" width="40" height="40"></i>
+                                                                                                                                                                                                                                                                                                    </button>
+                                                                                                                                                                                                                                                                                                ` : ``}
                                     `;
                         },
 
@@ -1088,6 +1120,71 @@
                     }
                 });
             });
+
+            // Export
+            $('#export-excel-periodik').on('click', function() {
+                // Get selected values
+                var periodeProfilingId = $('#select2-periode').val();
+                var statusFormValue = $('#select2-status_form').val();
+
+                // Create a form element dynamically
+                var form = $('<form></form>').attr({
+                    method: 'GET', // Use GET method
+                    action: "{{ route('export.excel.profiling') }}" // Replace with your server endpoint
+                });
+
+                // Add the fields to the form
+                form.append($('<input>').attr({
+                    type: 'hidden',
+                    name: 'periode_id',
+                    value: periodeProfilingId
+                }));
+                form.append($('<input>').attr({
+                    type: 'hidden',
+                    name: 'status_form',
+                    value: statusFormValue
+                }));
+
+                // Append the form to the body and submit it
+                form.appendTo('body').submit();
+            });
+
+            $('#export-csv-periodik').on('click', function() {
+                alert('Currently unavailable. Try export to excel instead.');
+            });
+
+            // Export Mandiri
+            $('#export-excel-mandiri').on('click', function() {
+                // Get selected values
+                var periodeProfilingId = id_profiling_mandiri;
+                var statusFormValue = $('#select2-status_form_mandiri').val();
+
+                // Create a form element dynamically
+                var form = $('<form></form>').attr({
+                    method: 'GET', // Use GET method
+                    action: "{{ route('export.excel.profiling') }}" // Replace with your server endpoint
+                });
+
+                // Add the fields to the form
+                form.append($('<input>').attr({
+                    type: 'hidden',
+                    name: 'periode_id',
+                    value: periodeProfilingId
+                }));
+                form.append($('<input>').attr({
+                    type: 'hidden',
+                    name: 'status_form',
+                    value: statusFormValue
+                }));
+
+                // Append the form to the body and submit it
+                form.appendTo('body').submit();
+            });
+
+            $('#export-csv-mandiri').on('click', function() {
+                alert('Currently unavailable. Try export to excel instead.');
+            });
+
         });
     </script>
     {{-- //History --}}

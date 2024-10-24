@@ -52,14 +52,14 @@ Route::middleware(['sso-bps'])->group(function () {
     Route::get('direktori-usaha', [DirektoriUsahaController::class, 'index'])->name('direktori_usaha.index');
     Route::post('direktori-usaha/data', [DirektoriUsahaController::class, 'getDirektoriUsahaData'])->name('direktori_usaha.data');
     Route::post('direktori-usaha/data-by-id', [DirektoriUsahaController::class, 'getDirektoriUsahaDataById'])->name('direktori_usaha.data_by_id');
-    Route::get('direktori-usaha/export', [DirektoriUsahaController::class, 'exportExcel'])->name('export.excel');
+    Route::get('direktori-usaha/export', [DirektoriUsahaController::class, 'exportExcelPeriodik'])->name('export.excel');
 
     //Profiling
     Route::get('profiling', [ProfilingController::class, 'index'])->name('profiling.index');
     Route::get('/profiling/get-data', [ProfilingController::class, 'getData'])->name('profiling.getData');
     Route::get('profiling/update/usaha/{perusahaan_id}/{alokasi_id}/history', [ProfilingController::class, 'getHistoryData'])->name('form_update_usaha.history');
     Route::post('profiling/update/usaha/{perusahaan_id}/{alokasi_id}/cancel', [ProfilingController::class, 'cancelData'])->name('form_update_usaha.cancel');
-    
+    Route::get('profiling/export_excel', [ProfilingController::class, 'exportExcel'])->name('export.excel.profiling');
     
 
 

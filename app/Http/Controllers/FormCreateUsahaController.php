@@ -191,6 +191,8 @@ class FormCreateUsahaController extends Controller
             'validator'=>null
         ]);
 
+        $perusahaanIdgenerated = Crypt::encrypt($perusahaanIdgenerated);
+
          // Return JSON response with redirection URL
         return response()->json([
             'success' => true,
