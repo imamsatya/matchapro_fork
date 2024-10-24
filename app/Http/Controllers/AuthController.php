@@ -23,10 +23,10 @@ class AuthController extends Controller
       }
 
       $provider = new \JKD\SSO\Client\Provider\Keycloak([
-        'authServerUrl'         => 'https://sso.bps.go.id',
-        'realm'                 => 'pegawai-bps',
-        'clientId'              => '03100-matcha-kj7',
-        'clientSecret'          => '90024b9a-0b19-4cb0-9e4e-6238043f3786',
+        'authServerUrl'         => env('SSO_AUTH_SERVER_URL'),
+        'realm'                 => env('SSO_REALM'),
+        'clientId'              => env('SSO_CLIENT_ID'),
+        'clientSecret'          => env('SSO_CLIENT_SECRET'),
         'redirectUri'           => route('login')
       ]);
 

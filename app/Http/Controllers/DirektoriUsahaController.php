@@ -9,9 +9,17 @@ use Box\Spout\Writer\Common\Creator\WriterEntityFactory;
 use Box\Spout\Common\Entity\Row;
 use Rap2hpoutre\FastExcel\FastExcel;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Http\Controllers\MasterWilayahController;
 
 class DirektoriUsahaController extends Controller
 {
+
+    protected $masterWilayah;
+
+    public function __construct(MasterWilayahController $masterWilayah) {
+        $this->masterWilayah = $masterWilayah;
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -19,9 +27,9 @@ class DirektoriUsahaController extends Controller
      */
     public function index(Request $request)
     {        
+        // get wilayah akses dari user logged-in
         $viewProvinsi = auth()->user()->getPermissionsViaRoles()->contains('name','view-usaha-provinsi');
         $viewKabupaten = auth()->user()->getPermissionsViaRoles()->contains('name','view-usaha-kabkot');        
-
         $wilayahAkses = DB::table('matchapro_users_wilayah_akses')->where('user_id', auth()->user()->id)->get();
 
         $usaha = DB::table('business_perusahaan')
@@ -35,13 +43,7 @@ class DirektoriUsahaController extends Controller
             ")
             ->when($viewProvinsi || $viewKabupaten, function($query) use ($wilayahAkses) {
                 return $query->whereIn('kabupaten_kota_id', $wilayahAkses->pluck('kabupaten_kota_id'));
-            })
-            // ->when($viewProvinsi, function($query) {
-            //     return $query->where('provinsi_id', auth()->user()->provinsi_id);
-            // })
-            // ->when($viewKabupaten, function($query) {
-            //     return $query->where('kabupaten_kota_id', auth()->user()->kabupaten_kota_id);
-            // })
+            })            
             ->where(function($query) {
                 $query->where('status_perusahaan_id', '<>', 10)
                       ->orWhereNull('status_perusahaan_id');
@@ -69,8 +71,10 @@ class DirektoriUsahaController extends Controller
         'usaha_aktif' => $usaha_aktif, 
         'usaha_tidak_aktif' => $usaha_tidak_aktif, 
         'usaha_undefined' => $usaha_undefined,
-        'wilayahAksesProvinsi' => $wilayahAkses->pluck('provinsi_id')->unique()->values()->toArray(),
-        'wilayahAksesKabupaten' => $wilayahAkses->pluck('kabupaten_kota_id')->unique()->values()->toArray()
+        // 'wilayahAksesProvinsi' => $wilayahAkses->pluck('provinsi_id')->unique()->values()->toArray(),
+        // 'wilayahAksesKabupaten' => $wilayahAkses->pluck('kabupaten_kota_id')->unique()->values()->toArray(),
+        'masterProvinsi' => $this->masterWilayah->getMasterProvinsiUser(),
+        'wilayahAkses' => $wilayahAkses->count()
         ]);
     }
 
@@ -200,7 +204,7 @@ class DirektoriUsahaController extends Controller
 
 
 
-    public function getDirektoriUsahaData(Request $request) {
+    public function getDirektoriUsahaData(Request $request) {        
 
         if($request->filled('nama_usaha') && $request->filled('alamat_usaha')) {                      
             $dir_usaha = $this->searchUsingFREETEXTTABLE($request->nama_usaha, $request->alamat_usaha);
@@ -226,6 +230,11 @@ class DirektoriUsahaController extends Controller
                 } else {
                     $dir_usaha->where('status_perusahaan_id', $request->status_perusahaan);
                 }
+            } else {
+                $dir_usaha->where(function($query) {
+                    $query->where('status_perusahaan_id', '<>', 10)
+                        ->orWhereNull('status_perusahaan_id');
+                });
             }
         } else {
             $dir_usaha->where(function($query) {
@@ -241,7 +250,30 @@ class DirektoriUsahaController extends Controller
             } else {
                 $dir_usaha->where('bp.kode', $request->idsbr);
             }
-        }            
+        }   
+        
+        if($request->filled('wilayah')) {
+            $f_provinsi = substr($request->wilayah, 0, 2);
+            $f_kabupaten = substr($request->wilayah, 2, 2);
+            $f_kecamatan = substr($request->wilayah, 4, 3);
+            $f_desa = substr($request->wilayah, 7, 3);
+
+            if($f_provinsi) {
+                $dir_usaha->where('ap.kode', $f_provinsi);
+            }
+
+            if($f_kabupaten) {
+                $dir_usaha->where('akk.kode', $f_kabupaten);
+            }
+
+            if($f_kecamatan) {
+                $dir_usaha->where('ak.kode', $f_kecamatan);
+            }
+
+            if($f_desa) {
+                $dir_usaha->where('akd.kode', $f_desa);
+            }
+        }
 
         $recordsTotal = $dir_usaha->count();
 
@@ -351,12 +383,21 @@ class DirektoriUsahaController extends Controller
 
     public function exportExcel(Request $request)
     {
+        // check if user can download 
+        $canDownload = auth()->user()->getPermissionsViaRoles()->contains('name','export-direktori-usaha');
+        if(!$canDownload) {
+            return redirect()->route('not-authorized.index')
+                    ->with('message', 'User tidak memiliki hak akses untuk mengunduh data usaha!');
+        }
+
+        // check if data yang mau didownload sesuai dengan wilayah akses user
         $wilayahAkses = DB::table('matchapro_users_wilayah_akses')->where('user_id', auth()->user()->id)->get();
         $role_user = auth()->user()->getRoleNames()[0]; // PUSAT-ADMIN, dst
         $level_role_user = explode('-' , $role_user)[0]; // PUSAT, dst
         if($level_role_user != 'PUSAT') {            
             if (!$wilayahAkses->pluck('kabupaten_kota_id')->contains($request->kabupaten)) {
-                return redirect()->route('error_page.index');
+                return redirect()->route('not-authorized.index')
+                    ->with('message', 'User tidak memiliki hak akses untuk mengunduh data pada wilayah tersebut!');
             }
         }
 

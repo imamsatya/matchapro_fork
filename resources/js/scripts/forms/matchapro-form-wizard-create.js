@@ -205,6 +205,17 @@ $('#select2-kabupaten_kota').on('change', function() {
         inputField.classList.remove('error');
     }
 })
+
+$('#select2-provinsi').on('change', function() {
+  var selectedProvinsi = $(this).val()
+  if(selectedProvinsi != "" || selectedProvinsi != null){
+      var inputField = document.getElementById("select2-provinsi");
+      var errorContainer = document.getElementById("select2-provinsi-error")
+
+      errorContainer.innerHTML = ""; // Clear error related to length
+      inputField.classList.remove('error');
+  }
+})
     
 
       $(horizontalWizard)
@@ -260,6 +271,13 @@ $('#select2-kabupaten_kota').on('change', function() {
                         field: 'select2-kabupaten_kota',
                         message: "Kabupaten/Kota tidak boleh kosong"
                     });
+                }
+
+                if(provinsi == null || provinsi == '') {
+                  error.push({
+                    field: 'select2-provinsi',
+                    message: "Provinsi tidak boleh kosong"
+                  })
                 }
 
                 if (error.length > 0) {

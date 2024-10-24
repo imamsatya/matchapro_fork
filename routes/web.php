@@ -15,6 +15,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MasterWilayahController;
 use App\Http\Controllers\MasterKBLi;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\MiscController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -30,7 +31,7 @@ use App\Http\Controllers\UserController;
 
 Route::get('login', [AuthController::class, 'index'])->name('login');
 Route::post('login', [AuthController::class, 'login'])->name('login.post');
-
+Route::get('error/not-authorized', [MiscController::class, 'notAuthorizedPage'])->name('not-authorized.index');
 
 Route::middleware(['sso-bps'])->group(function () {
     Route::get('/', [HomeController::class, 'index']);
@@ -49,7 +50,7 @@ Route::middleware(['sso-bps'])->group(function () {
 
     //Direktori Usaha
     Route::get('direktori-usaha', [DirektoriUsahaController::class, 'index'])->name('direktori_usaha.index');
-    Route::get('direktori-usaha/data', [DirektoriUsahaController::class, 'getDirektoriUsahaData'])->name('direktori_usaha.data');
+    Route::post('direktori-usaha/data', [DirektoriUsahaController::class, 'getDirektoriUsahaData'])->name('direktori_usaha.data');
     Route::post('direktori-usaha/data-by-id', [DirektoriUsahaController::class, 'getDirektoriUsahaDataById'])->name('direktori_usaha.data_by_id');
     Route::get('direktori-usaha/export', [DirektoriUsahaController::class, 'exportExcel'])->name('export.excel');
 
@@ -89,8 +90,10 @@ Route::middleware(['sso-bps'])->group(function () {
     Route::post('wil-desa', [MasterWilayahController::class, 'getDesa'])->name('wil-desa');
     Route::post('wil-kecamatan', [MasterWilayahController::class, 'getKecamatan'])->name('wil-kecamatan');
     Route::post('wil-kabupaten-kota', [MasterWilayahController::class, 'getKabupaten'])->name('wil-kabupaten-kota');
+    Route::post('wil-kabupaten-kota-user', [MasterWilayahController::class, 'getMasterKabkotUser'])->name('wil-kabupaten-kota-user');
     Route::post('master-kbli', [MasterKBLI::class, 'getMasterKBLI'])->name('master-kbli');
     Route::post('check-idsbr', [FormUpdateUsahaController::class, 'checkIDSBR'])->name('check-idsbr');
+    Route::post('wil-provinsi-user', [MasterWilayahController::class, 'getMasterProvinsiUser'])->name('wil-provinsi-user');
 
     Route::get('user/list', [UserController::class, 'index'])->name('user.list');
     Route::get('user/data', [UserController::class, 'getData'])->name('user.list.data');

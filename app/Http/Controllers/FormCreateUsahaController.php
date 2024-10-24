@@ -5,12 +5,21 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Str; // Import the Str facade
+use Illuminate\Support\Facades\Crypt;
 
 use DB;
 use Auth;
+use App\Http\Controllers\MasterWilayahController;
 
 class FormCreateUsahaController extends Controller
 {
+
+    protected $masterWilayah;
+
+    public function __construct(MasterWilayahController $masterWilayah) {
+        $this->masterWilayah = $masterWilayah;
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -25,80 +34,24 @@ class FormCreateUsahaController extends Controller
     }
 
     public function index(Request $request)
-    {
-        //
+    {        
         
-        if(! ($this->checkPermission('create-new-usaha-provinsi') || $this->checkPermission('create-new-usaha-kabkot')) ){
-            abort(403);
+        if(! ($this->checkPermission('create-new-usaha-provinsi') || $this->checkPermission('create-new-usaha-kabkot')) ){            
+            $pageConfigs = ['blankPage' => true];
+            return view('/matchapro/misc/not-authorized', ['pageConfigs' => $pageConfigs]);
         }
+        
+        $masterProvinsi = $this->masterWilayah->getMasterProvinsiUser();        
         
         $pageConfigs = ['sidebarCollapsed' => false];
         $breadcrumbs = [
-            ['link' => "home", 'name' => "Home"], ['name' => "Create"]
-        ];
-
-        $snapshot_id = DB::table('area_provinsi')->max('snapshot_id');
-        
-        //Cek User
-        $user = auth()->user(); // or User::find($id);
-        $role = $user->getRoleNames()->first(); // Get the first role
-        $role = Role::findByName($role); // Replace 'role_name' with the actual role
-        
-        $createNewUsahaProvinsi = false;
-        //Provinsi ?
-        if($role->hasPermissionTo('create-new-usaha-provinsi'))
-        {
-            $createNewUsahaProvinsi = true;
-            $provinsi = DB::table('area_provinsi')
-            ->where('snapshot_id', $snapshot_id)
-            ->where('id', $user->provinsi_id)
-            ->first(); 
-            
-            $kabupaten_kota = DB::table('area_kabupaten_kota')
-            ->where('provinsi_id', $user->provinsi_id)
-            ->get();
-
-            $kecamatan = DB::table('area_kecamatan')
-            ->whereIn('kabupaten_kota_id', $kabupaten_kota->pluck('id'))
-            ->get();
-
-        }
-        
-        //Kabupaten ?
-        else if ($role->hasPermissionTo('create-new-usaha-kabkot'))
-        {
-            $provinsi = DB::table('area_provinsi')
-            ->where('snapshot_id', $snapshot_id)
-            ->where('id', $user->provinsi_id)
-            ->first();         
-
-            $kabupaten_kota = DB::table('area_kabupaten_kota')
-            ->where('id', $user->kabupaten_kota_id)
-            ->first();
-           
-            $kecamatan = DB::table('area_kecamatan')
-            ->where('kabupaten_kota_id', $user->kabupaten_kota_id)
-            ->get();
-
-            $kelurahan_desa = DB::table('area_kelurahan_desa')
-            ->whereIn('kecamatan_id', $kecamatan->pluck('id'))
-            ->get();
-
-        }
-        else{
-
-            abort(403);
-        };
+            ['link' => "home", 'name' => "Home"], ['name' => "Tambah Usaha Baru"]
+        ];        
         
         return view('/matchapro/page/form_create', [
             'breadcrumbs' => $breadcrumbs, 
-            'pageConfigs' => $pageConfigs, 
-            'request' => $request,
-            'provinsi' => $provinsi,
-            'kabupaten_kota' => $kabupaten_kota,
-            'kecamatan' => $kecamatan,
-            'kelurahan_desa' => $kelurahan_desa ?? [],
-            'createNewUsahaProvinsi' => $createNewUsahaProvinsi
+            'pageConfigs' => $pageConfigs,  
+            'masterProvinsi' => $masterProvinsi            
         ]);
 
     }
@@ -242,7 +195,7 @@ class FormCreateUsahaController extends Controller
         return response()->json([
             'success' => true,
             'redirect_url' => route('form_update_usaha.index', [
-                'perusahaan_id' => $perusahaanIdgenerated,
+                'perusahaan_id' => Crypt::encrypt($perusahaanIdgenerated),
                 'alokasi_id' => $id_alokasi
             ])
         ]);
