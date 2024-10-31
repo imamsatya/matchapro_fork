@@ -1349,7 +1349,7 @@
             initializeFormOutput();
             validateForm();
             showErrorMessages();
-            let numError = calculateError();
+            let numError = calculateError();            
             if (numError) return;
 
             let numConsistency = consistencyCheck();
@@ -1779,6 +1779,10 @@
                     }
                     return;
                 }
+
+                delete listError.idsbr_master;
+                delete listError.kabupaten_kota_pindah;
+                delete listError.provinsi_pindah;
 
                 $(".hidden-input-only").removeClass('is-invalid');
                 delete listError.status_perusahaan;

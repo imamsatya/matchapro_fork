@@ -17,7 +17,7 @@
 @endsection
 
 @section('content')
-    @if(!$wilayahAkses)
+    @if(!$wilayahAkses && $levelRole != 'PUSAT')
     <div class="alert alert-danger alert-dismissible fade show mb-2" role="alert">
         <h4 class="alert-heading">Informasi</h4>
         <div class="alert-body">

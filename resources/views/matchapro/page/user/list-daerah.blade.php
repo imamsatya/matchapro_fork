@@ -84,8 +84,7 @@
                     </div>
                     <div class="col-md-6">
                         <label for="edit-role" class="form-label">Role</label>
-                        <select class="form-select select2" id="edit-role" name="role_id">
-                            <option value="">Select Role</option>
+                        <select disabled class="form-select select2" id="edit-role" name="role_id">                            
                             @foreach($roles as $role)
                                 <option value="{{ $role->id }}">{{ $role->name }}</option>
                             @endforeach
@@ -111,7 +110,7 @@
                         </div>
                     </div>
                     <div class="col-12">
-                        <label class="form-label" for="edit-whatsapp">Nomor Whatsapp</label>
+                        <label class="form-label" for="whatsapp">Nomor Whatsapp</label>
                         <input type="text" class="form-control" id="edit-whatsapp" placeholder="Nomor Whatsapp" name="whatsapp"
                             aria-label="Nomor Whatsapp">
                     </div>
@@ -253,23 +252,24 @@
                         <div class="invalid-feedback"><span id="add-username-error"></span></div>
                     </div>
                     <div class="col-md-6">
-                        <label for="add-provinsi" class="form-label">Provinsi</label>
+                        <label for="add-provinsi" class="form-label">Provinsi <span class="text-danger">*</span> <small class="text-muted">(sesuai community)</small></label>
                         <select class="form-select select2" id="add-provinsi" name="add-provinsi_id">
                             <option value="">Select Provinsi</option>
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label for="add-kabupaten" class="form-label">Kabupaten/Kota</label>
+                        <label for="add-kabupaten" class="form-label">Kabupaten/Kota <small class="text-muted">(sesuai community)</small></label>
                         <select class="form-select select2" id="add-kabupaten" name="add-kabupaten_kota_id">
                             <option value="">Select Kabupaten/Kota</option>
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label for="add-role" class="form-label">Role</label>
-                        <select class="form-select select2" id="add-role" name="add-role_id">
-                            <option value="">Select Role</option>
+                        <label for="add-role" class="form-label">Role <span class="text-danger">*</span></label>
+                        <select class="form-select select2" id="add-role" name="add-role_id">                            
                             @foreach($roles as $role)
+                                @if($role->name == 'PROFILER')
                                 <option value="{{ $role->id }}">{{ $role->name }}</option>
+                                @endif
                             @endforeach
                         </select>
                     </div>                    
@@ -370,7 +370,11 @@
                             return `<span class="badge bg-light-info">${data.length} Kab/Kota</span>`
                         }
                     },
-                    { data: 'role', name: 'role', orderable: false, searchable: false, width: '20%' },
+                    { data: 'role', name: 'role', orderable: false, searchable: false, width: '20%', 
+                        render: function(data, type, full, meta) {
+                            return data.split('-').slice(1).join('-');
+                        }
+                     },
                     { data: 'is_active', name: 'is_active', width: '10%', 
                         render: function(data, type, full, meta) {
                             return `<span class="badge ${data == '1' ? 'bg-light-success' : 'bg-light-danger'}">${data == '1' ? 'Active' : 'Inactive'}</span>`;
@@ -460,10 +464,10 @@
                     $("#info-satker").html(`[${rowData.satuan_kerja}] PUSAT`)
                 } else if(rowData.kode_kabupaten == '00') {
                     $("#info-satker").html(`[${rowData.satuan_kerja}] PROVINSI ${rowData.nama_provinsi}`)
-                } else {
+                } else {                    
                     $("#info-satker").html(`[${rowData.satuan_kerja}] ${rowData.kode_kabupaten >= 70 ? 'KOTA' : 'KABUPATEN'} ${rowData.nama_kabupaten}`)
                 }
-                $("#info-role").html(rowData.role)
+                $("#info-role").html(rowData.role.split('-').slice(1).join('-'))
                 $("#editWilayahModal").modal('show');                
             });
 
@@ -519,6 +523,14 @@
             })
 
             var cleaveWA = new Cleave("#edit-whatsapp", {
+                prefix: '+62',
+                delimiter: '-',
+                blocks: [3, 3, 4, 4],
+                uppercase: true,
+                numericOnly: true,
+            });
+
+            var cleaveWA = new Cleave("#add-whatsapp", {
                 prefix: '+62',
                 delimiter: '-',
                 blocks: [3, 3, 4, 4],
@@ -636,8 +648,7 @@
 
                 setTimeout(function() {
                     $("#edit-kabupaten").val(data.user.kabupaten_kota_id).trigger('change');
-                }, 700);                
-                
+                }, 700);   
             }
 
             let cacheKab = [];
@@ -849,11 +860,10 @@
 
             function getWilayahKab(provId) {
                 return $.ajax({
-                    url: '{{ route("wil-kabupaten-kota") }}',
+                    url: '{{ route("wil-kabupaten-kota-user") }}',
                     type: 'POST',
                     data: {
-                        provinsi: provId,
-                        level: 'all',
+                        provinsi: provId,                        
                         _token: '{{ csrf_token() }}'
                     },
                 });
@@ -883,7 +893,7 @@
                 sendData();
             });
             
-            // yovi
+            
             let formDataAdd = null;
             let listFormErrorAdd = {};
             $("#saveAddUser").on('click', function() {
@@ -1111,7 +1121,7 @@
                     username: $("#edit-username").val().trim(),
                     provinsi_id: $("#edit-provinsi").val(),
                     kabupaten_kota_id: $("#edit-kabupaten").val(),
-                    role_id: $("#edit-role").val(),
+                    // role_id: $("#edit-role").val(),
                     is_active: $("#edit-active").prop("checked") ? 1 : 0,
                     whatsapp: $("#edit-whatsapp").val()
                 } 
@@ -1132,22 +1142,39 @@
             function validateFormAdd() {
                 if(!formDataAdd.name) {
                     $("#add-name").addClass('is-invalid');
-                    listFormError['add-name'] = 'Nama harus terisi';
+                    listFormErrorAdd['add-name'] = 'Nama harus terisi';
                 } else {
                     $("#add-name").removeClass('is-invalid');
-                    delete listFormError['add-name'];
+                    delete listFormErrorAdd['add-name'];
                 }
 
                 if(!formDataAdd.username) {
                     $("#add-username").addClass('is-invalid');
-                    listFormError['add-username'] = 'Username harus terisi';
+                    listFormErrorAdd['add-username'] = 'Username harus terisi';
                 } else if(formDataAdd.username.includes(' ')) {
                     $("#add-username").addClass('is-invalid');
-                    listFormError['add-username'] = 'Username tidak boleh mengandung spasi';
+                    listFormErrorAdd['add-username'] = 'Username tidak boleh mengandung spasi';
                 } else {
                     $("#add-username").removeClass('is-invalid');
-                    delete listFormError['add-username'];
-                }           
+                    delete listFormErrorAdd['add-username'];
+                }   
+                
+                
+                if(!formDataAdd.provinsi_id) {
+                    $("#add-provinsi").addClass('is-invalid');
+                    listFormErrorAdd['add-provinsi'] = 'Provinsi harus terisi';
+                } else {
+                    $("#add-provinsi").removeClass('is-invalid');
+                    delete listFormErrorAdd['add-provinsi'];
+                }   
+
+                if(!formDataAdd.role_id) {
+                    $("#add-role").addClass('is-invalid');
+                    listFormErrorAdd['add-role'] = 'Role harus terisi';
+                } else {
+                    $("#add-role").removeClass('is-invalid');
+                    delete listFormErrorAdd['add-role'];
+                }                
                 
                 return Object.keys(listFormErrorAdd).length;
                 
@@ -1171,7 +1198,7 @@
                 } else {
                     $("#edit-username").removeClass('is-invalid');
                     delete listFormError['edit-username'];
-                }           
+                }                                   
                 
                 return Object.keys(listFormError).length;
                 
@@ -1269,7 +1296,8 @@
             function renderUser(data) {
                 let stateNum = Math.floor(Math.random() * 6) + 1;
                 let states = ['success', 'danger', 'warning', 'info', 'dark', 'primary', 'secondary'];                
-                let initials = data.name != null ? (data.name.match(/\b\w/g) || []) : [];                
+                let initials = data.name != null ? (data.name.match(/\b\w/g) || []) : [];
+                
                 initials = ((initials.shift() || '') + (initials.pop() || '')).toUpperCase();
                 initials = '<span class="avatar-content">' + initials + '</span>';
                 let output = data.photo ? `<img src="${data.photo}" alt="user-avatar" height="32" width="32" />` : initials;

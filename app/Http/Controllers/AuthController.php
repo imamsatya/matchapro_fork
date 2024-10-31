@@ -17,38 +17,37 @@ class AuthController extends Controller
     //
     public function index(Request $request)
     {
-      if (Auth::check()) {
-        
-        return redirect()->route('home');
-      }
+        if (Auth::check()) {          
+          return redirect()->route('home');
+        }
 
-      $provider = new \JKD\SSO\Client\Provider\Keycloak([
-        'authServerUrl'         => env('SSO_AUTH_SERVER_URL'),
-        'realm'                 => env('SSO_REALM'),
-        'clientId'              => env('SSO_CLIENT_ID'),
-        'clientSecret'          => env('SSO_CLIENT_SECRET'),
-        'redirectUri'           => route('login')
-      ]);
+        $provider = new \JKD\SSO\Client\Provider\Keycloak([
+          'authServerUrl'         => env('SSO_AUTH_SERVER_URL'),
+          'realm'                 => env('SSO_REALM'),
+          'clientId'              => env('SSO_CLIENT_ID'),
+          'clientSecret'          => env('SSO_CLIENT_SECRET'),
+          'redirectUri'           => route('login')
+        ]);
 
-      $authUrl = null;
-      if(!isset($_GET['code'])) {
-        $authUrl = $provider->getAuthorizationUrl();        
-      } else {
-        try {            
-            $token = $provider->getAccessToken('authorization_code', [
-                    'code' => $_GET['code']
-                ]);            
-            $userSSO = $provider->getResourceOwner($token);
-            session(['sso_token' => $token, 'userSSO' => $userSSO]);                        
-            return redirect()->route('home');
-          } catch (Exception $e) {
-            return redirect()->route('login');
-          }
-      }          
+        $authUrl = null;
+        if(!isset($_GET['code'])) {
+          $authUrl = $provider->getAuthorizationUrl();        
+        } else {
+          try {            
+              $token = $provider->getAccessToken('authorization_code', [
+                      'code' => $_GET['code']
+                  ]);            
+              $userSSO = $provider->getResourceOwner($token);
+              session(['sso_token' => $token, 'userSSO' => $userSSO]);                        
+              return redirect()->route('home');
+            } catch (Exception $e) {
+              return redirect()->route('login');
+            }
+        }          
 
-    $pageConfigs = ['blankPage' => true];
+      $pageConfigs = ['blankPage' => true];
 
-    return view('/matchapro/authentication/auth-login-basic', ['pageConfigs' => $pageConfigs, 'authUrl' => $authUrl ]);
+      return view('/matchapro/authentication/auth-login-basic', ['pageConfigs' => $pageConfigs, 'authUrl' => $authUrl ]);
       
       
     }
@@ -64,6 +63,21 @@ class AuthController extends Controller
         
         
           if (Auth::attempt($credentials)) {
+
+              $user = Auth::user();
+
+              // check if user still active
+              if ($user->is_active == 0) {
+                  Auth::logout();
+                  return back()->withErrors(['username' => 'User not active.']);
+              }
+
+              // check if user is deleted
+              if($user->is_delete == 1) {
+                  Auth::logout();
+                  return back()->withErrors(['username' => 'User deleted.']);        
+              }
+
               return redirect()->intended('home');
           }
           
@@ -75,6 +89,14 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         Auth::logout();
+        $keycloakSession = session()->get('sso_token');
+        $userSSO = session()->get('userSSO');
+        if ($keycloakSession) {
+            session()->forget('sso_token');
+        }
+        if($userSSO) {
+          session()->forget('userSSO');
+        }
         return redirect()->route('login');
     }
 }

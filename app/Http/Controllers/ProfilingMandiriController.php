@@ -17,23 +17,40 @@ class ProfilingMandiriController extends Controller
      */
     public function index()
     {
-        //
-        $pageConfigs = ['sidebarCollapsed' => false];
-        $id_profiling_mandiri = env('PERIODE_PROFILING_MANDIRI');
+
+        $pageConfigs = ['blankPage' => true];
+        return view('/matchapro/misc/not-found', ['pageConfigs' => $pageConfigs]);
+        
+        // $roleUser = auth()->user()->getRoleNames();
+        // // belum memiliki roles
+        // if(!$roleUser->count()) {
+        //     $pageConfigs = ['blankPage' => true];
+        //     return view('/matchapro/misc/not-authorized', ['pageConfigs' => $pageConfigs]);
+        // }
+
+        // $pageConfigs = ['sidebarCollapsed' => false];
+        // $id_profiling_mandiri = env('PERIODE_PROFILING_MANDIRI');
         
         
         
        
-        return view('/matchapro/page/profiling_mandiri', [
-            // 'breadcrumbs' => $breadcrumbs, 
-            'pageConfigs' => $pageConfigs,
-            'id_profiling_mandiri' => $id_profiling_mandiri]);
+        // return view('/matchapro/page/profiling_mandiri', [
+        //     // 'breadcrumbs' => $breadcrumbs, 
+        //     'pageConfigs' => $pageConfigs,
+        //     'id_profiling_mandiri' => $id_profiling_mandiri]);
 
 
     }
 
     public function getDataAll(Request $request)
     {
+
+        $roleUser = auth()->user()->getRoleNames();
+        // belum memiliki roles
+        if(!$roleUser->count()) {
+            $pageConfigs = ['blankPage' => true];
+            return view('/matchapro/misc/not-authorized', ['pageConfigs' => $pageConfigs]);
+        }
 
         $status_form = $request->input('status_form');
         

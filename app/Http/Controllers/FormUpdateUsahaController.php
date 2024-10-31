@@ -31,6 +31,21 @@ class FormUpdateUsahaController extends Controller
      */
     public function index($perusahaan_id, $alokasi_id)
     {        
+
+        $roleUser = auth()->user()->getRoleNames();
+        // belum memiliki roles
+        if(!$roleUser->count()) {
+            $pageConfigs = ['blankPage' => true];
+            return view('/matchapro/misc/not-authorized', ['pageConfigs' => $pageConfigs]);
+        }
+
+        // cek apakah bisa melakukan edit usaha
+        $canEditUsaha = auth()->user()->getPermissionsViaRoles()->contains('name','update-usaha-profiling-user');
+        if(!$canEditUsaha) {
+            $pageConfigs = ['blankPage' => true];
+            return view('/matchapro/misc/not-authorized', ['pageConfigs' => $pageConfigs]);
+        }
+
         $init_perusahaan_id = $perusahaan_id;
         $init_alokasi_id = $alokasi_id;
         $perusahaan_id = Crypt::decrypt($perusahaan_id); // di decrypt dulu perusahaan_id nya biar normal lagi gaes
@@ -47,7 +62,15 @@ class FormUpdateUsahaController extends Controller
 
         // cek periode profilingnya, siapa tau udah ditutup
         if(!$this->isPeriodeProfilingAktif($alokasiProfiling->periode_id)) {
-            return redirect()->route('periode_profiling_mandiri_tutup.index'); 
+            // return redirect()->route('periode_profiling_mandiri_tutup.index'); 
+            if($alokasiProfiling->periode_id == env('PERIODE_PROFILING_MANDIRI'))
+            {
+                $pageConfigs = ['blankPage' => true];
+                return view('/matchapro/misc/profiling-mandiri-tutup', ['pageConfigs' => $pageConfigs]);
+            }   
+            
+            $pageConfigs = ['blankPage' => true];            
+            return view('/matchapro/misc/profiling-periodik-tutup', ['pageConfigs' => $pageConfigs]);
         }
         
         // cek kalau yang coba akses adalah user yang sah / valid
@@ -57,7 +80,9 @@ class FormUpdateUsahaController extends Controller
         // kalo beda usernya dan bukan user yang bisa melakukan approval 
         // -> tampilkan halaman tidak bisa edit karena sedang diedit orang lain
         if(!$profilerYangSah && !$canApprove) { // you are not that guy ...
-            return redirect()->route('lagi_dikerjain_orang_lain.index'); 
+            // return redirect()->route('lagi_dikerjain_orang_lain.index'); 
+            $pageConfigs = ['blankPage' => true];            
+            return view('/matchapro/misc/lagi-dikerjain-orang-lain', ['pageConfigs' => $pageConfigs]);
         }        
                  
         // get latest update 
@@ -184,7 +209,21 @@ class FormUpdateUsahaController extends Controller
     }
 
     public function formUpdateFromDirektoriUsaha($encrypted_perusahaan_id) {
-        
+
+        $roleUser = auth()->user()->getRoleNames();
+        // belum memiliki roles
+        if(!$roleUser->count()) {
+            $pageConfigs = ['blankPage' => true];
+            return view('/matchapro/misc/not-authorized', ['pageConfigs' => $pageConfigs]);
+        }
+
+        // cek apakah bisa melakukan edit usaha
+        $canEditUsaha = auth()->user()->getPermissionsViaRoles()->contains('name','update-usaha-profiling-user');
+        if(!$canEditUsaha) {
+            $pageConfigs = ['blankPage' => true];
+            return view('/matchapro/misc/not-authorized', ['pageConfigs' => $pageConfigs]);
+        }
+
         $perusahaan_id = Crypt::decrypt($encrypted_perusahaan_id); // didecrypt dulu perusahaan_id nya biar normal lagi ges
 
         // step 1. cek perusahaan_id di table alokasi_profiling
@@ -276,7 +315,7 @@ class FormUpdateUsahaController extends Controller
         // kalo periode profilng mandirinya aktif, eksekusi kode dibawah            
         $usaha = DB::table('business_perusahaan')->where('id', $perusahaan_id)->first(); // get idsbr dulu gaes
         // insert alokasi profilingnya dulu biar sah ngerjain proflingnya.. (perusahaan_id, idsbr, tipe, periode_profiling_id)
-        $idAlokasiProfiling = $this->insertAlokasiProfiling($perusahaan_id, $usaha->kode, 'UPDATE', $periodeProfilingMandiri);
+        $idAlokasiProfiling = $this->insertAlokasiProfiling($perusahaan_id, $usaha->kode, 'UPDATE', $periodeProfilingMandiri, $usaha->provinsi_id, $usaha->kabupaten_kota_id);
         return redirect()->route('form_update_usaha.index', [
             'perusahaan_id' => $encrypted_perusahaan_id,
             'alokasi_id' => $idAlokasiProfiling
@@ -419,7 +458,7 @@ class FormUpdateUsahaController extends Controller
         return view('/matchapro/page/halaman_error');
     }
 
-    public function insertAlokasiProfiling($perusahaan_id, $idsbr, $tipe, $periode_profiling) {                
+    public function insertAlokasiProfiling($perusahaan_id, $idsbr, $tipe, $periode_profiling, $provinsi_id, $kabupaten_kota_id) {                
         DB::table('matchapro_alokasi_profiling')->insert([
             'user_id' => auth()->user()->id,
             'perusahaan_id' => $perusahaan_id,
@@ -429,7 +468,9 @@ class FormUpdateUsahaController extends Controller
             'catatan' => null,
             'action_type' => $tipe,
             'created_at' => now(),
-            'updated_at' => now()
+            'updated_at' => now(),
+            'init_provinsi_id' => $provinsi_id,
+            'init_kabupaten_kota_id' => $kabupaten_kota_id
         ]);
         
         $latestRecord= DB::table('matchapro_alokasi_profiling')->where('user_id', auth()->user()->id)
@@ -499,7 +540,6 @@ class FormUpdateUsahaController extends Controller
                 'produk_usaha' => isset($kegiatan['produk_usaha']) ? $kegiatan['produk_usaha'] : null,
                 'temp_ref' => $latestRecord->id
             ];
-
         }
 
         // insert kegiatan usaha
@@ -732,7 +772,9 @@ class FormUpdateUsahaController extends Controller
                 $data['provinsi_pindah'] = $latestUpdate->provinsi_pindah;
                 $data['kabupaten_kota_pindah'] = $latestUpdate->kabupaten_kota_pindah;
                 $data['idsbr_master'] = $latestUpdate->idsbr_master;                
-                $data['kegiatan_usaha'] = $latestKegiatanUsaha->toArray();
+                $data['kegiatan_usaha'] = array_map(function($item) {
+                    return (array)$item;
+                }, $latestKegiatanUsaha->toArray());
             }
 
             // inserting data ....

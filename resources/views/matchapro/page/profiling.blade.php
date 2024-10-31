@@ -22,6 +22,15 @@
 
 
 @section('content')
+    @if(!$wilayahAkses && $levelRole != 'PUSAT')
+    <div class="alert alert-danger alert-dismissible fade show mb-2" role="alert">
+        <h4 class="alert-heading">Informasi</h4>
+        <div class="alert-body">
+            User belum memiliki akses terhadap wilayah manapun!
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    @endif
     <!-- Kick start -->
     <div class="card">
         <div class="col-xl-12 col-lg-12 col-md-12">
@@ -29,14 +38,14 @@
                 <div class="card-header">
                     <h4 class="card-title">Profiling</h4>
                 </div>
-                <div class="card-body">
+                <div class="card-body card-container">
                     <ul class="nav nav-tabs" role="tablist">
                         <li class="nav-item">
                             <a class="nav-link active" id="homeIcon-tab" data-bs-toggle="tab" href="#homeIcon"
                                 aria-controls="home" role="tab" aria-selected="true"><i data-feather="file-text"></i>
                                 Profiling Periodik</a>
                         </li>
-                        <li class="nav-item">
+                        <li class="nav-item" id="tab-mandiri">
                             <a class="nav-link" id="profileIcon-tab" data-bs-toggle="tab" href="#profileIcon"
                                 aria-controls="profile" role="tab" aria-selected="false"><i data-feather="file"></i>
                                 Profiling Mandiri</a>
@@ -51,7 +60,6 @@
                                         <div class="col-md-6 mb-1">
                                             <label class="form-label" for="select2-periode">Periode Profiling</label>
                                             <select class="select2 form-select" id="select2-periode">
-
                                                 @foreach ($periode_profiling as $periode)
                                                     <option value="{{ $periode->id }}"
                                                         data-is_active="{{ $periode->is_active }}"
@@ -64,14 +72,12 @@
                                         <div class="col-md-6 mb-1">
                                             <label class="form-label" for="select2-status_form">Status Form</label>
                                             <select class="select2 form-select" id="select2-status_form">
-                                                <option value="">--Pilih Status Form--</option>
+                                                <option value="">--All Status Form--</option>
                                                 <option value="OPEN">OPEN</option>
                                                 <option value="DRAFT">DRAFT</option>
                                                 <option value="SUBMITTED">SUBMITTED</option>
                                                 <option value="REJECTED">REJECTED</option>
-                                                <option value="APPROVED">APPROVED</option>
-                                                <option value="CANCELED">CANCELED</option>
-
+                                                <option value="APPROVED">APPROVED</option>                                                
                                             </select>
                                         </div>
                                     </div>
@@ -141,34 +147,19 @@
                                                     <p class="card-text">Rejected</p>
                                                 </div>
                                             </div>
-                                        </div>
-                                        {{-- <div class="col-xl-2 col-md-4 col-sm-6">
-                                            <div class="card text-center">
-                                                <div class="">
-                                                    <div class="avatar bg-light-danger p-50 mb-1">
-                                                        <div class="avatar-content">
-                                                            <i data-feather="trash-2" class="font-medium-5"></i>
-                                                        </div>
-                                                    </div>
-                                                    <h2 class="fw-bolder canceled-count">0</h2>
-                                                    <p class="card-text">Canceled</p>
-                                                </div>
-                                            </div>
-                                        </div> --}}
+                                        </div>                                        
                                     </div>
                                 </div>
                             </div>
 
                             <div class="card">
-
                                 <div id="alert-periode_berakhir"></div>
-
-
                                 <div class="card-header">
                                     <h4 class="card-title">Data Alokasi Profiling</h4>
                                 </div>
                                 <div class="card-body">
                                     <div class="d-flex justify-content-end">
+                                    <button class="btn btn-outline-primary me-1" id="reload-periodik"><i data-feather="refresh-cw"></i> RELOAD</button>
                                         <button class="btn btn-outline-secondary dropdown-toggle" type="button"
                                             id="export-dropdown-periodik" data-bs-toggle="dropdown"
                                             aria-expanded="false">
@@ -190,27 +181,25 @@
                                         <table id="data_profiling" class="dt-responsive table " style="width: 100%">
                                             <thead>
                                                 <tr>
-                                                    <th>Kode</th>
+                                                    <th>IDSBR</th>
                                                     <th>Nama</th>
-                                                    <th>Alamat</th>
-                                                    <th>Wilayah</th>
+                                                    <th>Alamat</th>                                                    
                                                     <th>Status</th>
                                                     <th>Updated At</th>
+                                                    <th>Updated By</th>
+                                                    <th>Tipe Update</th>
                                                     <th>Aksi</th>
                                                 </tr>
                                             </thead>
                                             <tfoot>
                                                 <tr>
-                                                    <th>Kode</th>
+                                                    <th>IDSBR</th>
                                                     <th>Nama</th>
-                                                    <th>Alamat</th>
-                                                    {{-- <th>Provinsi</th>
-                                                    <th>Kabupaten/Kota</th>
-                                                    <th>Kecamatan</th>
-                                                    <th>Kelurahan/Desa</th> --}}
-                                                    <th>Wilayah</th>
+                                                    <th>Alamat</th>                                                                                                        
                                                     <th>Status</th>
                                                     <th>Updated At</th>
+                                                    <th>Updated By</th>
+                                                    <th>Tipe Update</th>
                                                     <th>Aksi</th>
                                                 </tr>
                                             </tfoot>
@@ -227,11 +216,11 @@
                                 <div class="card-text">
                                     <div class="row">
 
-                                        <div class="col-md-6 mb-1">
+                                        <div class="col-12 mb-1">
                                             <label class="form-label" for="select2-status_form_mandiri">Status
                                                 Form</label>
                                             <select class="select2 form-select" id="select2-status_form_mandiri">
-                                                <option value="">--Pilih Status Form--</option>
+                                                <option value="">--All Status Form--</option>
                                                 <option value="OPEN">OPEN</option>
                                                 <option value="DRAFT">DRAFT</option>
                                                 <option value="SUBMITTED">SUBMITTED</option>
@@ -331,6 +320,7 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="d-flex justify-content-end">
+                                        <button class="btn btn-outline-primary me-1" id="reload-mandiri"><i data-feather="refresh-cw"></i> RELOAD</button>
                                         <button class="btn btn-outline-secondary dropdown-toggle" type="button"
                                             id="export-dropdown-mandiri" data-bs-toggle="dropdown" aria-expanded="false">
                                             <i data-feather="upload" class="me-25"></i>
@@ -351,10 +341,9 @@
                                             style="width: 100%">
                                             <thead>
                                                 <tr>
-                                                    <th>Kode</th>
+                                                    <th>IDSBR</th>
                                                     <th>Nama</th>
-                                                    <th>Alamat</th>
-                                                    <th>Wilayah</th>
+                                                    <th>Alamat</th>                                                    
                                                     <th>Status</th>
                                                     <th>Updated At</th>
                                                     <th>Updated By</th>
@@ -366,8 +355,7 @@
                                                 <tr>
                                                     <th>Kode</th>
                                                     <th>Nama</th>
-                                                    <th>Alamat</th>
-                                                    <th>Wilayah</th>
+                                                    <th>Alamat</th>                                                    
                                                     <th>Status</th>
                                                     <th>Updated At</th>
                                                     <th>Updated By</th>
@@ -653,10 +641,12 @@
                 "{{ route('form_update_usaha.index', ['perusahaan_id' => ':perusahaan_id', 'alokasi_id' => ':alokasi_id']) }}";
             let cancelUpdateUsahaRoute =
                 "{{ route('form_update_usaha.cancel', ['perusahaan_id' => ':perusahaan_id', 'alokasi_id' => ':alokasi_id']) }}";
+            
+            let canEdit = {{ $canEdit ? 'true' : 'false' }};            
 
             var table = $('#data_profiling').DataTable({
                 language: {
-                    emptyTable: "Tidak ada Data yang tersedia"
+                    emptyTable: "Tidak ada data yang tersedia"
                 },
                 processing: true,
                 serverSide: true,
@@ -677,29 +667,24 @@
                 //     processing: '<div class="d-flex justify-content-center align-items-center"><p class="me-50 mb-0">Mohon Menunggu...</p></div> <div class="spinner-border text-primary" role="status">',
                 // },
                 columns: [{
-                        data: 'kode',
-                        title: 'Kode',
+                        data: 'idsbr',
+                        title: 'IDSBR',
                         width: '1%'
                     },
                     {
-                        data: 'nama',
-                        title: 'Nama Usaha'
-                    },
-                    {
-                        data: 'alamat',
-                        title: 'Alamat'
+                        data: null,
+                        title: 'Nama Usaha',
+                        render: function(data, type, full, meta) {
+                            return full.nama_usaha ? full.nama_usaha : full.nama_sbr;
+                        }
                     },
                     {
                         data: null,
-                        title: 'Wilayah',
-                        render: function(data, type, row) {
-                            // Generate buttons with actions
-                            // return `${row.provinsi_nama}-${row.kabupaten_kota_nama}-${row.kecamatan_nama}-${row.kelurahan_desa_nama} `;
-                            return `${row.provinsi_kode}-${row.kabupaten_kota_kode}${row.kecamatan_kode ? '-'+row.kecamatan_kode : ''}${row.kelurahan_desa_kode ? '-'+row.kelurahan_desa_kode : ''} <br> <hr>
-                            ${row.provinsi_nama}-${row.kabupaten_kota_nama}${row.kecamatan_nama ? '-'+row.kecamatan_nama : ''}${row.kelurahan_desa_nama ? '-'+row.kelurahan_desa_nama : ''}
-                            `;
+                        title: 'Alamat',
+                        render: function(data, type, full, meta) {
+                            return full.alamat ? full.alamat : full.alamat_sbr;
                         }
-                    },
+                    },                    
                     {
                         data: 'status_form',
                         title: 'Status',
@@ -714,7 +699,9 @@
                             }
 
                             if (row.status_form == 'SUBMITTED') {
-                                return `<span class="badge rounded-pill badge-light-success">${row.status_form}</span>`;
+                                return `<span class="badge rounded-pill badge-light-success">${row.status_form}</span>
+                                <br/><span class="text-muted" style="white-space: nowrap"><small>Menunggu Approval</small></span>
+                                `;
                             }
 
                             if (row.status_form == 'REJECTED') {
@@ -742,6 +729,14 @@
                         }
                     },
                     {
+                        data: 'username',
+                        title: 'Updated By'                        
+                    },
+                    {
+                        data: 'action_type',
+                        title: 'TIPE UPDATE'
+                    },
+                    {
                         data: null, // This column doesn't correspond to a field in the dataset
                         title: 'Aksi',
                         orderable: false, // Disable ordering on this column
@@ -761,9 +756,10 @@
                                     <i data-feather="eye" width="40" height="40"></i>
                                 </button>
                             </a>
-                            <a href="${editUrl}" > 
+                            ${canEdit ? `<a href="${editUrl}" > 
                                 <button type="button" class="btn btn-icon btn-flat-primary btn-lg " data-bs-toggle="tooltip" data-bs-placement="top" title="Edit"><i data-feather="edit" width="40" height="40"></i></button>
-                            </a>`;
+                            </a>` : ``}
+                            `;
                         },
                         width: '12%'
                     }
@@ -771,6 +767,7 @@
                 drawCallback: function() {
                     // Re-render Feather icons after the table is drawn
                     feather.replace();
+                    $('[data-bs-toggle="tooltip"]').tooltip();
                 }
             });
 
@@ -869,19 +866,11 @@
                 table.ajax.reload();
             });
 
-
-
-
             // Trigger change event on page load to check the initial selection
             // $("#select2-periode").change();
 
-
-
             //Profiling Mandiri
-            var id_profiling_mandiri = @json($id_profiling_mandiri);
-
-
-            // console.log('id_mandiri', id_profiling_mandiri)
+            var id_profiling_mandiri = @json($id_profiling_mandiri);            
             var table_mandiri = $('#data_profiling_mandiri').DataTable({
                 language: {
                     emptyTable: "Tidak ada Data yang tersedia"
@@ -904,29 +893,24 @@
                 //     processing: '<div class="d-flex justify-content-center align-items-center"><p class="me-50 mb-0">Mohon Menunggu...</p></div> <div class="spinner-border text-primary" role="status">',
                 // },
                 columns: [{
-                        data: 'kode',
-                        title: 'Kode',
+                        data: 'idsbr',
+                        title: 'IDSBR',
 
                     },
                     {
-                        data: 'nama',
-                        title: 'Nama Usaha'
-                    },
-                    {
-                        data: 'alamat',
-                        title: 'Alamat'
+                        data: null,
+                        title: 'Nama Usaha',
+                        render: function(data, type, full, meta) {
+                            return full.nama_usaha ? full.nama_usaha : full.nama_sbr;
+                        }
                     },
                     {
                         data: null,
-                        title: 'Wilayah',
-                        render: function(data, type, row) {
-                            // Generate buttons with actions
-                            // return `${row.provinsi_nama}-${row.kabupaten_kota_nama}-${row.kecamatan_nama}-${row.kelurahan_desa_nama} `;
-                            return `${row.provinsi_kode}-${row.kabupaten_kota_kode} ${row.kecamatan_kode ? '-'+row.kecamatan_kode : ''}${row.kelurahan_desa_kode ? '-'+row.kelurahan_desa_kode : ''} <br> <hr>
-                            ${row.provinsi_nama}-${row.kabupaten_kota_nama} ${row.kecamatan_nama ? '-'+row.kecamatan_nama : ''} ${row.kelurahan_desa_nama ? '-'+row.kelurahan_desa_nama : ''}
-                            `;
+                        title: 'Alamat',
+                        render: function(data, type, full, meta) {
+                            return full.alamat ? full.alamat : full.alamat_sbr;
                         }
-                    },
+                    },                     
                     {
                         data: 'status_form',
                         title: 'Status',
@@ -941,7 +925,9 @@
                             }
 
                             if (row.status_form == 'SUBMITTED') {
-                                return `<span class="badge rounded-pill badge-light-success">${row.status_form}</span>`;
+                                return `<span class="badge rounded-pill badge-light-success">${row.status_form}</span>                                    
+                                <br/><span class="text-muted" style="white-space: nowrap"><small>Menunggu Approval</small></span>
+                                `;
                             }
 
                             if (row.status_form == 'REJECTED') {
@@ -953,7 +939,9 @@
                             }
 
                             if (row.status_form == 'CANCELED') {
-                                return `<span class="badge rounded-pill badge-light-danger">${row.status_form}</span>`;
+                                return `<span class="badge rounded-pill badge-light-danger">${row.status_form}</span>
+                                <br/><span class="text-muted" style="white-space: nowrap"><small>By: ${row.last_updated_by_username ?? '-'}</small></span>
+                                `;
                             }
                             // Generate buttons with actions
                             // return `${row.status_form}`;
@@ -969,12 +957,8 @@
                         }
                     },
                     {
-                        data: 'updated_by_nama',
-                        title: 'Updated By',
-                        render: function(data, type, row) {
-                            // Generate buttons with actions
-                            return `${row.updated_by_nama}`;
-                        }
+                        data: 'username',
+                        title: 'Updated By',                        
                     },
                     {
                         data: 'action_type',
@@ -1008,25 +992,26 @@
                                             </button>
                                         </a>
 
-                                        <a href="${editUrl}"> 
+                                        ${canEdit && (row.status_form != 'APPROVED' && row.status_form != 'CANCELED') ? 
+                                        `<a href="${editUrl}"> 
                                             <button type="button" class="btn btn-icon btn-flat-primary btn-lg" 
                                                     data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
                                                 <i data-feather="edit" width="40" height="40"></i>
                                             </button>
-                                        </a>
+                                        </a>` : ``}
 
                                         ${((row.action_type === 'CREATE' || row.action_type == 'UPDATE') && 
                                         (row.status_form === 'OPEN' || row.status_form === 'DRAFT' || row.status_form === 'REJECTED')) ? `
-                                                                                                                                                                                                                                                                                                    <button type="button" class="cancel-button btn btn-icon btn-flat-danger btn-lg" 
-                                                                                                                                                                                                                                                                                                            data-url="{{ route('form_update_usaha.cancel', ['perusahaan_id' => '__PERUSAHAAN_ID__', 'alokasi_id' => '__ALOKASI_ID__']) }}" 
-                                                                                                                                                                                                                                                                                                            data-perusahaan_id="${row.perusahaan_id}" 
-                                                                                                                                                                                                                                                                                                            data-alokasi_id="${row.id}" 
-                                                                                                                                                                                                                                                                                                            data-bs-toggle="tooltip" 
-                                                                                                                                                                                                                                                                                                            data-bs-placement="top" 
-                                                                                                                                                                                                                                                                                                            title="Cancel">
-                                                                                                                                                                                                                                                                                                        <i data-feather="x" width="40" height="40"></i>
-                                                                                                                                                                                                                                                                                                    </button>
-                                                                                                                                                                                                                                                                                                ` : ``}
+                                            <button type="button" class="cancel-button btn btn-icon btn-flat-danger btn-lg" 
+                                                    data-url="{{ route('form_update_usaha.cancel', ['perusahaan_id' => '__PERUSAHAAN_ID__', 'alokasi_id' => '__ALOKASI_ID__']) }}" 
+                                                    data-perusahaan_id="${row.perusahaan_id}" 
+                                                    data-alokasi_id="${row.id}" 
+                                                    data-bs-toggle="tooltip" 
+                                                    data-bs-placement="top" 
+                                                    title="Cancel">
+                                                <i data-feather="x" width="40" height="40"></i>
+                                            </button>
+                                        ` : ``}
                                     `;
                         },
 
@@ -1036,6 +1021,7 @@
                 drawCallback: function() {
                     // Re-render Feather icons after the table is drawn
                     feather.replace();
+                    $('[data-bs-toggle="tooltip"]').tooltip();
                 }
             });
 
@@ -1098,10 +1084,7 @@
                                     title: 'Cancelled!',
                                     text: 'Profiling (update/create) berhasil dibatalkan',
                                     icon: 'success'
-                                });
-
-                                // Optionally, you can close the modal or refresh part of the page here
-                                console.log('Request successful:', response);
+                                });                                
                             },
                             error: function(xhr) {
                                 // Close the loading animation
@@ -1112,9 +1095,7 @@
                                     title: 'Error!',
                                     text: 'Terjadi kesalahan. Silakan coba kembali.',
                                     icon: 'error'
-                                });
-
-                                console.error('Request failed:', xhr);
+                                });                                
                             }
                         });
                     }
@@ -1185,328 +1166,391 @@
                 alert('Currently unavailable. Try export to excel instead.');
             });
 
-        });
-    </script>
-    {{-- //History --}}
-    <script>
-        $(document).on('click', '[data-bs-target="#backdrop"]', function() {
-            var sectionBlock = $('.section-block-history_periodik')
-            // Get perusahaan_id and alokasi_id from the clicked button
-            const perusahaanId = $(this).data('perusahaan_id');
-            const alokasiId = $(this).data('alokasi_id');
-            console.log(`perusahaanId : ${perusahaanId}`)
-            console.log(`alokasiId : ${alokasiId}`)
-            // Get the URL from the data-url attribute and replace placeholders with actual IDs
-            let getDetailUrl = $(this).data('url');
-            getDetailUrl = getDetailUrl.replace('__PERUSAHAAN_ID__', perusahaanId);
-            getDetailUrl = getDetailUrl.replace('__ALOKASI_ID__', alokasiId);
 
-            // Perform the AJAX request
-            $.ajax({
-                url: getDetailUrl, // The dynamically built URL using route name
-                type: 'GET',
-                data: {
-                    perusahaan_id: perusahaanId,
-                    alokasi_id: alokasiId,
-                },
-                beforeSend: function() {
-                    sectionBlock.block({
-                        message: '<div class="d-flex justify-content-center align-items-center"><p class="me-50 mb-0">Mohon Menunggu...</p></div> <div class="spinner-border text-white" role="status"></div>',
-                        timeout: 5000,
-                        css: {
-                            backgroundColor: 'transparent',
-                            color: '#fff',
-                            border: '0',
-                            width: '100%',
-                            top: '50%',
-                        },
-                        overlayCSS: {
-                            opacity: 0.5,
-                        },
-                        centerY: false, // Ensures vertical centering
-                    });
-                },
-                success: function(data) {
-                    sectionBlock.unblock();
-                    console.log(data);
-                    buildDataTableDetail(data);
-                },
-                error: function(err) {
-                    sectionBlock.unblock();
-                    alert('Unable to load data.');
-                }
+            $(document).on('click', '[data-bs-target="#backdrop"]', function() {
+                var sectionBlock = $('.section-block-history_periodik')
+                // Get perusahaan_id and alokasi_id from the clicked button
+                const perusahaanId = $(this).data('perusahaan_id');
+                const alokasiId = $(this).data('alokasi_id');                
+                // Get the URL from the data-url attribute and replace placeholders with actual IDs
+                let getDetailUrl = $(this).data('url');
+                getDetailUrl = getDetailUrl.replace('__PERUSAHAAN_ID__', perusahaanId);
+                getDetailUrl = getDetailUrl.replace('__ALOKASI_ID__', alokasiId);
+
+                // Perform the AJAX request
+                $.ajax({
+                    url: getDetailUrl, // The dynamically built URL using route name
+                    type: 'GET',
+                    data: {
+                        perusahaan_id: perusahaanId,
+                        alokasi_id: alokasiId,
+                    },
+                    beforeSend: function() {
+                        sectionBlock.block({
+                            message: '<div class="d-flex justify-content-center align-items-center"><p class="me-50 mb-0">Mohon Menunggu...</p></div> <div class="spinner-border text-white" role="status"></div>',
+                            timeout: 5000,
+                            css: {
+                                backgroundColor: 'transparent',
+                                color: '#fff',
+                                border: '0',
+                                width: '100%',
+                                top: '50%',
+                            },
+                            overlayCSS: {
+                                opacity: 0.5,
+                            },
+                            centerY: false, // Ensures vertical centering
+                        });
+                    },
+                    success: function(data) {
+                        sectionBlock.unblock();                        
+                        buildDataTableDetail(data);
+                    },
+                    error: function(err) {                        
+                        sectionBlock.unblock();
+                        alert('Unable to load data.');
+                    }
+                });
             });
-        });
 
 
-        // Function to build the DataTable
-        function buildDataTableDetail(data) {
-            // Check if the DataTable already exists and destroy it before re-initializing
-            if ($.fn.DataTable.isDataTable('#history_table')) {
-                $('#history_table').DataTable().clear().destroy();
+            // Function to build the DataTable
+            function buildDataTableDetail(data) {
+                // Check if the DataTable already exists and destroy it before re-initializing
+                if ($.fn.DataTable.isDataTable('#history_table')) {
+                    $('#history_table').DataTable().clear().destroy();
+                }
+
+                // Initialize DataTable
+                const tableDetail = $('#history_table').DataTable({
+                    language: {
+                        emptyTable: "Tidak ada Data yang tersedia"
+                    },
+                    data: data, // Pass the data from the server
+                    columns: [{
+                            //0
+                            title: "Kode",
+                            data: "idsbr_master"
+                        },
+                        {
+                            //1
+                            title: "Nama",
+                            data: "nama_usaha"
+                        },
+                        {
+                            //2
+                            title: "Alamat",
+                            data: "alamat"
+                        },
+                        {
+                            //3
+                            data: null,
+                            title: 'Provinsi',
+                            render: function(data, type, row) {
+                                return `${row.provinsi_kode}-${row.provinsi_nama}`;
+                            }
+                        },
+                        {
+                            //4
+                            data: null,
+                            title: 'Kabupaten/Kota',
+                            render: function(data, type, row) {
+                                return `${row.kabupaten_kota_kode}-${row.kabupaten_kota_nama}`;
+                            }
+                        },
+                        {
+                            //5
+                            data: null,
+                            title: 'Kecamatan',
+                            render: function(data, type, row) {
+                                if (row.kecamatan_kode === null || row.kecamatan_nama === null) {
+                                    return null;
+                                }
+                                return `${row.kecamatan_kode}-${row.kecamatan_nama}`;
+                            }
+                        },
+                        {
+                            //6
+                            data: null,
+                            title: 'Kelurahan/Desa',
+                            render: function(data, type, row) {
+                                if (row.kelurahan_desa_kode === null || row.kelurahan_desa_nama === null) {
+                                    return null;
+                                }
+                                return `${row.kelurahan_desa_kode}-${row.kelurahan_desa_nama}`;
+                            }
+                        },
+                        {
+                            //7
+                            data: 'status_form',
+                            title: 'Status Form',
+                            render: function(data, type, row) {
+
+                                if (row.status_form == 'OPEN') {
+                                    return `<span class="badge rounded-pill badge-light-warning">${row.status_form}</span>`;
+                                }
+
+                                if (row.status_form == 'DRAFT') {
+                                    return `<span class="badge rounded-pill badge-light-warning">${row.status_form}</span>`;
+                                }
+
+                                if (row.status_form == 'SUBMITTED') {
+                                    return `<span class="badge rounded-pill badge-light-success">${row.status_form}</span>`;
+                                }
+
+                                if (row.status_form == 'REJECTED') {
+                                    return `<span class="badge rounded-pill badge-light-danger">${row.status_form}</span>`;
+                                }
+
+                                if (row.status_form == 'APPROVED') {
+                                    return `<span class="badge rounded-pill badge-light-success">${row.status_form}</span>`;
+                                }
+
+                                if (row.status_form == 'CANCELED') {
+                                    return `<span class="badge rounded-pill badge-light-danger">${row.status_form}</span>`;
+                                }
+                            }
+                        },
+                        {
+                            //8
+                            data: "status_perusahaan_id",
+                            title: 'Status Usaha',
+                            render: function(data, type, row) {
+                                if (row.status_perusahaan_id == 1) {
+                                    return 'Aktif';
+                                }
+                                if (row.status_perusahaan_id == 2) {
+                                    return 'Tutup Sementara';
+                                }
+                                if (row.status_perusahaan_id == 3) {
+                                    return 'Belum Berproduksi';
+                                }
+                                if (row.status_perusahaan_id == 4) {
+                                    return 'Tutup';
+                                }
+                                if (row.status_perusahaan_id == 5) {
+                                    return 'Alih Usaha';
+                                }
+                                if (row.status_perusahaan_id == 6) {
+                                    return 'Tidak Ditemukan';
+                                }
+                                if (row.status_perusahaan_id == 7) {
+                                    return 'Aktif Pindah';
+                                }
+                                if (row.status_perusahaan_id == 8) {
+                                    return 'Aktif Nonrespons';
+                                }
+                                if (row.status_perusahaan_id == 9) {
+                                    return 'Dilaporkan Duplikat oleh Sekretatriat IBR';
+                                }
+                                if (row.status_perusahaan_id == 10) {
+                                    return 'Hapus';
+                                }
+                            }
+                        },
+                        {
+                            //9
+                            data: "updated_at",
+                            title: 'UPDATED AT'
+                        },
+                        {
+                            //10
+                            data: "created_at",
+                            title: 'CREATED AT'
+                        },
+                        {
+                            //11
+                            data: "email",
+                            title: 'Email'
+                        },
+                        {
+                            //12
+                            data: "website",
+                            title: 'Website'
+                        },
+                        {
+                            //13
+                            data: "kodepos",
+                            title: 'Kode Pos'
+                        },
+                        {
+                            //14
+                            data: "latitude",
+                            title: 'Latitude'
+                        },
+                        {
+                            //15
+                            data: "longitude",
+                            title: 'Longitude'
+                        },
+                        {
+                            //16
+                            data: "telp",
+                            title: 'Telepon'
+                        },
+                        {
+                            //17
+                            data: "no_wa",
+                            title: 'No Whatsapp'
+                        },
+                        {
+                            //18
+                            data: "kategori",
+                            title: 'Kategori'
+                        },
+                        {
+                            //19
+                            data: "kbli",
+                            title: 'KBLI'
+                        },
+                        {
+                            //20
+                            data: "kegiatan_utama",
+                            title: 'Kegiatan Utama'
+                        },
+                        {
+                            //21
+                            data: "deskripsi_produk_usaha",
+                            title: 'Kegiatan Utama'
+                        },
+                        {
+                            //22
+                            data: "jenis_kepemilikan_usaha",
+                            title: 'Jenis Kepemilikan Usaha'
+                        },
+                        {
+                            //23
+                            data: "bentuk_badan_usaha_id",
+                            title: 'Bentuk Badan Usaha'
+                        },
+                        {
+                            //24
+                            data: "tahun_berdiri",
+                            title: 'Tahun Berdiri'
+                        },
+                        {
+                            //25
+                            data: "jaringan_usaha_id",
+                            title: 'Jarinagan Usaha'
+                        },
+
+                    ],
+                    processing: true,
+                    serverSide: false,
+                    paging: true,
+                    searching: true,
+                    ordering: true,
+                    order: [
+                        [9, 'desc']
+                    ]
+                });
+
+                // Loop through checkboxes and set up a single change event listener
+                const columnsMap = {
+                    'kodeCheckbox': 0,
+                    'namaCheckbox': 1,
+                    'alamatCheckbox': 2,
+                    'provinsiCheckbox': 3,
+                    'kabupatenKotaCheckbox': 4,
+                    'kecamatanCheckbox': 5,
+                    'kelurahanDesaCheckbox': 6,
+                    'statusFormCheckbox': 7,
+                    'statusUsahaCheckbox': 8,
+                    'updatedAtCheckbox': 9,
+                    'createdAtCheckbox': 10,
+                    'emailCheckbox': 11,
+                    'websiteCheckbox': 12,
+                    'kodePosCheckbox': 13,
+                    'latitudeCheckbox': 14,
+                    'longitudeCheckbox': 15,
+                    'telpCheckbox': 16,
+                    'noWaCheckbox': 17,
+                    'kategoriCheckbox': 18,
+                    'kbliCheckbox': 19,
+                    'kegiatanUtamaCheckbox': 20,
+                    'deskripsiProdukUsahaCheckbox': 21,
+                    'jenisKepemilikanUsahaCheckbox': 22,
+                    'bentukBadanUsahaCheckbox': 23,
+                    'tahunBerdiriCheckbox': 24,
+                    'jaringanUsahaCheckbox': 25
+
+                };
+
+                $.each(columnsMap, (checkboxId, columnIdx) => {
+                    $(`#${checkboxId}`).on('change', function() {
+                        tableDetail.column(columnIdx).visible(this.checked);
+                    }).trigger('change'); // Set initial visibility based on checkbox state
+                });
             }
 
-            // Initialize DataTable
-            const tableDetail = $('#history_table').DataTable({
-                language: {
-                    emptyTable: "Tidak ada Data yang tersedia"
-                },
-                data: data, // Pass the data from the server
-                columns: [{
-                        //0
-                        title: "Kode",
-                        data: "idsbr_master"
-                    },
-                    {
-                        //1
-                        title: "Nama",
-                        data: "nama_usaha"
-                    },
-                    {
-                        //2
-                        title: "Alamat",
-                        data: "alamat"
-                    },
-                    {
-                        //3
-                        data: null,
-                        title: 'Provinsi',
-                        render: function(data, type, row) {
-                            return `${row.provinsi_kode}-${row.provinsi_nama}`;
-                        }
-                    },
-                    {
-                        //4
-                        data: null,
-                        title: 'Kabupaten/Kota',
-                        render: function(data, type, row) {
-                            return `${row.kabupaten_kota_kode}-${row.kabupaten_kota_nama}`;
-                        }
-                    },
-                    {
-                        //5
-                        data: null,
-                        title: 'Kecamatan',
-                        render: function(data, type, row) {
-                            if (row.kecamatan_kode === null || row.kecamatan_nama === null) {
-                                return null;
-                            }
-                            return `${row.kecamatan_kode}-${row.kecamatan_nama}`;
-                        }
-                    },
-                    {
-                        //6
-                        data: null,
-                        title: 'Kelurahan/Desa',
-                        render: function(data, type, row) {
-                            if (row.kelurahan_desa_kode === null || row.kelurahan_desa_nama === null) {
-                                return null;
-                            }
-                            return `${row.kelurahan_desa_kode}-${row.kelurahan_desa_nama}`;
-                        }
-                    },
-                    {
-                        //7
-                        data: 'status_form',
-                        title: 'Status Form',
-                        render: function(data, type, row) {
 
-                            if (row.status_form == 'OPEN') {
-                                return `<span class="badge rounded-pill badge-light-warning">${row.status_form}</span>`;
-                            }
-
-                            if (row.status_form == 'DRAFT') {
-                                return `<span class="badge rounded-pill badge-light-warning">${row.status_form}</span>`;
-                            }
-
-                            if (row.status_form == 'SUBMITTED') {
-                                return `<span class="badge rounded-pill badge-light-success">${row.status_form}</span>`;
-                            }
-
-                            if (row.status_form == 'REJECTED') {
-                                return `<span class="badge rounded-pill badge-light-danger">${row.status_form}</span>`;
-                            }
-
-                            if (row.status_form == 'APPROVED') {
-                                return `<span class="badge rounded-pill badge-light-success">${row.status_form}</span>`;
-                            }
-
-                            if (row.status_form == 'CANCELED') {
-                                return `<span class="badge rounded-pill badge-light-danger">${row.status_form}</span>`;
-                            }
-                        }
-                    },
-                    {
-                        //8
-                        data: "status_perusahaan_id",
-                        title: 'Status Usaha',
-                        render: function(data, type, row) {
-                            if (row.status_perusahaan_id == 1) {
-                                return 'Aktif';
-                            }
-                            if (row.status_perusahaan_id == 2) {
-                                return 'Tutup Sementara';
-                            }
-                            if (row.status_perusahaan_id == 3) {
-                                return 'Belum Berproduksi';
-                            }
-                            if (row.status_perusahaan_id == 4) {
-                                return 'Tutup';
-                            }
-                            if (row.status_perusahaan_id == 5) {
-                                return 'Alih Usaha';
-                            }
-                            if (row.status_perusahaan_id == 6) {
-                                return 'Tidak Ditemukan';
-                            }
-                            if (row.status_perusahaan_id == 7) {
-                                return 'Aktif Pindah';
-                            }
-                            if (row.status_perusahaan_id == 8) {
-                                return 'Aktif Nonrespons';
-                            }
-                            if (row.status_perusahaan_id == 9) {
-                                return 'Dilaporkan Duplikat oleh Sekretatriat IBR';
-                            }
-                            if (row.status_perusahaan_id == 10) {
-                                return 'Hapus';
-                            }
-                        }
-                    },
-                    {
-                        //9
-                        data: "updated_at",
-                        title: 'UPDATED AT'
-                    },
-                    {
-                        //10
-                        data: "created_at",
-                        title: 'CREATED AT'
-                    },
-                    {
-                        //11
-                        data: "email",
-                        title: 'Email'
-                    },
-                    {
-                        //12
-                        data: "website",
-                        title: 'Website'
-                    },
-                    {
-                        //13
-                        data: "kodepos",
-                        title: 'Kode Pos'
-                    },
-                    {
-                        //14
-                        data: "latitude",
-                        title: 'Latitude'
-                    },
-                    {
-                        //15
-                        data: "longitude",
-                        title: 'Longitude'
-                    },
-                    {
-                        //16
-                        data: "telp",
-                        title: 'Telepon'
-                    },
-                    {
-                        //17
-                        data: "no_wa",
-                        title: 'No Whatsapp'
-                    },
-                    {
-                        //18
-                        data: "kategori",
-                        title: 'Kategori'
-                    },
-                    {
-                        //19
-                        data: "kbli",
-                        title: 'KBLI'
-                    },
-                    {
-                        //20
-                        data: "kegiatan_utama",
-                        title: 'Kegiatan Utama'
-                    },
-                    {
-                        //21
-                        data: "deskripsi_produk_usaha",
-                        title: 'Kegiatan Utama'
-                    },
-                    {
-                        //22
-                        data: "jenis_kepemilikan_usaha",
-                        title: 'Jenis Kepemilikan Usaha'
-                    },
-                    {
-                        //23
-                        data: "bentuk_badan_usaha_id",
-                        title: 'Bentuk Badan Usaha'
-                    },
-                    {
-                        //24
-                        data: "tahun_berdiri",
-                        title: 'Tahun Berdiri'
-                    },
-                    {
-                        //25
-                        data: "jaringan_usaha_id",
-                        title: 'Jarinagan Usaha'
-                    },
-
-                ],
-                processing: true,
-                serverSide: false,
-                paging: true,
-                searching: true,
-                ordering: true,
-                order: [
-                    [9, 'desc']
-                ]
+            $("#tab-mandiri").on('click', function() {
+                // alert('asdad')
             });
 
-            // Loop through checkboxes and set up a single change event listener
-            const columnsMap = {
-                'kodeCheckbox': 0,
-                'namaCheckbox': 1,
-                'alamatCheckbox': 2,
-                'provinsiCheckbox': 3,
-                'kabupatenKotaCheckbox': 4,
-                'kecamatanCheckbox': 5,
-                'kelurahanDesaCheckbox': 6,
-                'statusFormCheckbox': 7,
-                'statusUsahaCheckbox': 8,
-                'updatedAtCheckbox': 9,
-                'createdAtCheckbox': 10,
-                'emailCheckbox': 11,
-                'websiteCheckbox': 12,
-                'kodePosCheckbox': 13,
-                'latitudeCheckbox': 14,
-                'longitudeCheckbox': 15,
-                'telpCheckbox': 16,
-                'noWaCheckbox': 17,
-                'kategoriCheckbox': 18,
-                'kbliCheckbox': 19,
-                'kegiatanUtamaCheckbox': 20,
-                'deskripsiProdukUsahaCheckbox': 21,
-                'jenisKepemilikanUsahaCheckbox': 22,
-                'bentukBadanUsahaCheckbox': 23,
-                'tahunBerdiriCheckbox': 24,
-                'jaringanUsahaCheckbox': 25
+            $("#reload-mandiri").on('click', function() {
+                table_mandiri.ajax.reload(null, false)
+            })
 
-            };
+            $("#reload-periodik").on('click', function() {
+                table.ajax.reload(null, false)
+            })
 
-            $.each(columnsMap, (checkboxId, columnIdx) => {
-                $(`#${checkboxId}`).on('change', function() {
-                    tableDetail.column(columnIdx).visible(this.checked);
-                }).trigger('change'); // Set initial visibility based on checkbox state
-            });
-        }
+            table_mandiri.on('preXhr.dt', function(){
+                blockProgress($('.card-container'));
+            })
+
+            table_mandiri.on('xhr.dt', function(){
+                unblockProgress($('.card-container'));
+            })
+
+            table.on('preXhr.dt', function(){
+                blockProgress($('.card-container'));
+            })
+
+            table.on('xhr.dt', function(){
+                unblockProgress($('.card-container'));
+            })
+
+            function blockProgress(area) {
+                if (area == 'body') {
+                    $.blockUI({
+                        message: '<div class="spinner-border text-primary" role="status"></div>',
+                        css: {
+                            backgroundColor: 'transparent',
+                            border: '0'
+                        },
+                        overlayCSS: {
+                            backgroundColor: '#fff',
+                            opacity: 0.8
+                        }
+                    });
+                    return;
+                }
+
+                area.block({
+                    message: '<div class="spinner-border text-primary" role="status"></div>',
+                    css: {
+                        backgroundColor: 'transparent',
+                        border: '0'
+                    },
+                    overlayCSS: {
+                        backgroundColor: '#fff',
+                        opacity: 0.8
+                    }
+                });
+            }
+
+
+            function unblockProgress(area) {
+                if (area == 'body') {
+                    $.unblockUI();
+                    return;
+                }
+                area.unblock();
+            }
+
+        });
     </script>
 
 

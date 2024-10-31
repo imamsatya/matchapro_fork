@@ -35,7 +35,14 @@ class FormCreateUsahaController extends Controller
 
     public function index(Request $request)
     {        
-        
+
+        $roleUser = auth()->user()->getRoleNames();
+        // belum memiliki roles
+        if(!$roleUser->count()) {
+            $pageConfigs = ['blankPage' => true];
+            return view('/matchapro/misc/not-authorized', ['pageConfigs' => $pageConfigs]);
+        }
+    
         if(! ($this->checkPermission('create-new-usaha-provinsi') || $this->checkPermission('create-new-usaha-kabkot')) ){            
             $pageConfigs = ['blankPage' => true];
             return view('/matchapro/misc/not-authorized', ['pageConfigs' => $pageConfigs]);
@@ -85,47 +92,45 @@ class FormCreateUsahaController extends Controller
         $kecamatan_id = $request->input('kecamatan_id');
         $kelurahan_desa_id = $request->input('kelurahan_desa_id');
             
-            $query = "select FT_RESULT.*, 
-                        ap.id as provinsi_id, ap.kode as provinsi_kode, ap.nama as provinsi_nama,
-                        akk.id as kabupaten_id, akk.kode as kabupaten_kode, akk.nama as kabupaten_nama,
-                        ak.id as kecamatan_id, ak.kode as kecamatan_kode, ak.nama as kecamatan_nama,
-                        akd.id as kelurahan_id, akd.kode as kelurahan_kode, akd.nama as kelurahan_nama                        
-                        from 
-                        (
-                            select top 10
-                            (  
-                                CASE WHEN KEY_TBL.RANK is not null and KEY_TBL2.RANK is not null THEN 3.0 * KEY_TBL.RANK + 1.5 * KEY_TBL2.RANK      
-                                else 0  
-                                end  
-                            ) skor_kalo,  KEY_TBL.RANK rank_nama, KEY_TBL2.RANK rank_alamat, id perusahaan_id ,  nama, alamat, kode idsbr, provinsi_id, kabupaten_kota_id, 
-                            kecamatan_id, kelurahan_desa_id
-                            from business_perusahaan FT_TBL  
-                            full outer JOIN  
-                            FREETEXTTABLE (business_perusahaan, nama, '$nama_usaha' ) AS KEY_TBL  
-                            ON FT_TBL.id = KEY_TBL.[KEY]  
-                            FULL OUTER JOIN  
-                            FREETEXTTABLE ( business_perusahaan, alamat, '$alamat' ) AS KEY_TBL2  
-                            ON FT_TBL.id = KEY_TBL2.[KEY]  
-                            where provinsi_id = '$provinsi_id' 
-                            and kabupaten_kota_id = '$kabkot_id'            
-                            and (status_perusahaan_id != 9 or status_perusahaan_id is null) 
-                            ORDER BY skor_kalo desc
-                        ) as FT_RESULT
-                        join area_provinsi ap on ap.snapshot_id = $snapshot_id and ap.id = FT_RESULT.provinsi_id
-                        JOIN area_kabupaten_kota as akk ON akk.id = FT_RESULT.kabupaten_kota_id
-                        LEFT JOIN area_kecamatan as ak ON ak.id = FT_RESULT.kecamatan_id
-                        LEFT JOIN area_kelurahan_desa as akd ON akd.id = FT_RESULT.kelurahan_desa_id";
+        $query = "select FT_RESULT.*, 
+                    ap.id as provinsi_id, ap.kode as provinsi_kode, ap.nama as provinsi_nama,
+                    akk.id as kabupaten_id, akk.kode as kabupaten_kode, akk.nama as kabupaten_nama,
+                    ak.id as kecamatan_id, ak.kode as kecamatan_kode, ak.nama as kecamatan_nama,
+                    akd.id as kelurahan_id, akd.kode as kelurahan_kode, akd.nama as kelurahan_nama                        
+                    from 
+                    (
+                        select top 10
+                        (  
+                            CASE WHEN KEY_TBL.RANK is not null and KEY_TBL2.RANK is not null THEN 3.0 * KEY_TBL.RANK + 1.5 * KEY_TBL2.RANK      
+                            else 0  
+                            end  
+                        ) skor_kalo,  KEY_TBL.RANK rank_nama, KEY_TBL2.RANK rank_alamat, id perusahaan_id ,  nama, alamat, kode idsbr, provinsi_id, kabupaten_kota_id, 
+                        kecamatan_id, kelurahan_desa_id
+                        from business_perusahaan FT_TBL  
+                        full outer JOIN  
+                        FREETEXTTABLE (business_perusahaan, nama, '$nama_usaha' ) AS KEY_TBL  
+                        ON FT_TBL.id = KEY_TBL.[KEY]  
+                        FULL OUTER JOIN  
+                        FREETEXTTABLE ( business_perusahaan, alamat, '$alamat' ) AS KEY_TBL2  
+                        ON FT_TBL.id = KEY_TBL2.[KEY]  
+                        where provinsi_id = '$provinsi_id' 
+                        and kabupaten_kota_id = '$kabkot_id'            
+                        and (status_perusahaan_id not in (9,10) or status_perusahaan_id is null) 
+                        ORDER BY skor_kalo desc
+                    ) as FT_RESULT
+                    join area_provinsi ap on ap.snapshot_id = $snapshot_id and ap.id = FT_RESULT.provinsi_id
+                    JOIN area_kabupaten_kota as akk ON akk.id = FT_RESULT.kabupaten_kota_id
+                    LEFT JOIN area_kecamatan as ak ON ak.id = FT_RESULT.kecamatan_id
+                    LEFT JOIN area_kelurahan_desa as akd ON akd.id = FT_RESULT.kelurahan_desa_id
+                    where skor_kalo > 0
+                    ";
+        
+        
+        // Execute the query
+        $results = DB::select($query);                        
             
-            
-            // Execute the query
-            $results = DB::select($query);
-            
-            if(intval($results[0]->skor_kalo) == 0){
-                $results=[];
-            }
-            
-                        // Return the search results
-                        return response()->json($results);  
+        // Return the search results
+        return response()->json($results);  
     }
 
     /**
@@ -165,7 +170,9 @@ class FormCreateUsahaController extends Controller
             'action_type' => 'CREATE',
             'created_at' => now(), // Optional: Add timestamps
             'updated_at' => now(), // Optional: Add timestamps
-            'validator'=>null
+            'validator'=>null,
+            'init_provinsi_id' => $request->provinsi,
+            'init_kabupaten_kota_id' => $request->kabkot
         ]);
 
         $id_alokasi = DB::table('matchapro_alokasi_profiling')
@@ -190,8 +197,6 @@ class FormCreateUsahaController extends Controller
             'updated_at' => now(), // Optional: Add timestamps
             'validator'=>null
         ]);
-
-        $perusahaanIdgenerated = Crypt::encrypt($perusahaanIdgenerated);
 
          // Return JSON response with redirection URL
         return response()->json([

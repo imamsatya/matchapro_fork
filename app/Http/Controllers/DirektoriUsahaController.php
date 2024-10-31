@@ -27,6 +27,15 @@ class DirektoriUsahaController extends Controller
      */
     public function index(Request $request)
     {        
+
+        $roleUser = auth()->user()->getRoleNames();
+        // belum memiliki roles
+        if(!$roleUser->count()) {
+            $pageConfigs = ['blankPage' => true];
+            return view('/matchapro/misc/not-authorized', ['pageConfigs' => $pageConfigs]);
+        }
+        
+
         // get wilayah akses dari user logged-in
         $viewProvinsi = auth()->user()->getPermissionsViaRoles()->contains('name','view-usaha-provinsi');
         $viewKabupaten = auth()->user()->getPermissionsViaRoles()->contains('name','view-usaha-kabkot');        
@@ -64,6 +73,9 @@ class DirektoriUsahaController extends Controller
             ['link' => "home", 'name' => "Home"], ['name' => "Direktori Usaha"]
         ];                    
 
+        $roleUser = auth()->user()->getRoleNames()[0];
+        $level_role_user = explode('-' , $roleUser)[0]; // PUSAT, dst  
+
         //redirect ke halaman direktori usaha
         return view('/matchapro/page/direktori_usaha', 
         ['breadcrumbs' => $breadcrumbs, 
@@ -74,7 +86,8 @@ class DirektoriUsahaController extends Controller
         // 'wilayahAksesProvinsi' => $wilayahAkses->pluck('provinsi_id')->unique()->values()->toArray(),
         // 'wilayahAksesKabupaten' => $wilayahAkses->pluck('kabupaten_kota_id')->unique()->values()->toArray(),
         'masterProvinsi' => $this->masterWilayah->getMasterProvinsiUser(),
-        'wilayahAkses' => $wilayahAkses->count()
+        'wilayahAkses' => $wilayahAkses->count(),
+        'levelRole' => $level_role_user
         ]);
     }
 
@@ -383,6 +396,13 @@ class DirektoriUsahaController extends Controller
 
     public function exportExcel(Request $request)
     {
+        $roleUser = auth()->user()->getRoleNames();
+        // belum memiliki roles
+        if(!$roleUser->count()) {
+            $pageConfigs = ['blankPage' => true];
+            return view('/matchapro/misc/not-authorized', ['pageConfigs' => $pageConfigs]);
+        }
+        
         // check if user can download 
         $canDownload = auth()->user()->getPermissionsViaRoles()->contains('name','export-direktori-usaha');
         if(!$canDownload) {

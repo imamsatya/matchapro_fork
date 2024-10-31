@@ -31,6 +31,27 @@
     {{-- Include core + vendor Styles --}}
     @include('panels/styles')
 
+    <style>
+    .matcha-pro {
+        margin-top: 0.3rem;
+        font-family: 'Arial', sans-serif;
+        font-weight: bold;
+        font-size: 1.2rem;
+        letter-spacing: 1px;
+        background-color: #29c770;
+        color: white;
+        padding: 0px 0px 0px 5px;
+        display: inline-block;
+        border: 3px solid #29c770;
+  }
+
+  .matcha-pro span {
+    background-color: white;
+    color: #29c770;
+    padding: 0px 3px;
+    display: inline-block;
+  }
+  </style>
 </head>
 <!-- END: Head-->
 

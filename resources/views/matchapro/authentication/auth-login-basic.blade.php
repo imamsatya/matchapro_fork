@@ -16,10 +16,19 @@
                 <div class="card-body">
                     <a href="#" class="brand-logo">                        
                         <h2 class="brand-text text-primary ms-1">MATCHAPRO</h2>
-                    </a>
-
+                    </a>                    
                     <h4 class="card-title mb-1">Welcome to MatchaPro! 👋</h4>
                     <p class="card-text mb-2">Please sign-in to your account and start the adventure</p>
+
+                    @if ($errors->any())
+                        <div class="alert alert-danger p-1">
+                            <ul class="list-unstyled">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
 
                     <form class="auth-login-form mt-2" action="{{ route('login.post') }}" method="POST">
                         @csrf
@@ -33,7 +42,7 @@
                         <div class="mb-1">
                             <div class="d-flex justify-content-between">
                                 <label class="form-label" for="password_default">Password</label>
-                                <a href="{{ url('auth/forgot-password-basic') }}">
+                                <a href="javascript:void(0)">
                                     <small>Forgot Password?</small>
                                 </a>
                             </div>
@@ -53,33 +62,7 @@
                         </div>
                         <button class="btn btn-primary w-100" tabindex="4">Sign in</button>
                         <a href="{{ $authUrl }}" class="btn btn-secondary w-100 mt-1">Sign in with SSO BPS</a>
-                    </form>
-
-                    <p class="text-center mt-2">
-                        <span>New on our platform?</span>
-                        <a href="{{ url('auth/register-basic') }}">
-                            <span>Create an account</span>
-                        </a>
-                    </p>
-
-                    <div class="divider my-2">
-                        <div class="divider-text">or</div>
-                    </div>
-
-                    <div class="auth-footer-btn d-flex justify-content-center">
-                        <a href="#" class="btn btn-facebook">
-                            <i data-feather="facebook"></i>
-                        </a>
-                        <a href="#" class="btn btn-twitter white">
-                            <i data-feather="twitter"></i>
-                        </a>
-                        <a href="#" class="btn btn-google">
-                            <i data-feather="mail"></i>
-                        </a>
-                        <a href="#" class="btn btn-github">
-                            <i data-feather="github"></i>
-                        </a>
-                    </div>
+                    </form>                    
                 </div>
             </div>
             <!-- /Login basic -->

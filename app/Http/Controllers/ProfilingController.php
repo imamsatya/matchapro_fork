@@ -20,7 +20,15 @@ class ProfilingController extends Controller
      */
     public function index()
     {
-        //
+        $roleUser = auth()->user()->getRoleNames();
+        // belum memiliki roles
+        if(!$roleUser->count()) {
+            $pageConfigs = ['blankPage' => true];
+            return view('/matchapro/misc/not-authorized', ['pageConfigs' => $pageConfigs]);
+        }
+
+        $wilayahAkses = DB::table('matchapro_users_wilayah_akses')->where('user_id', auth()->user()->id)->get();
+
         $pageConfigs = ['sidebarCollapsed' => false];
         $breadcrumbs = [
             ['link' => "home", 'name' => "Home"], ['name' => "Profiling"]
@@ -31,60 +39,87 @@ class ProfilingController extends Controller
                             ->where('id', '!=', $id_profiling_mandiri)
                             ->get();
         
-        
+        $roleUser = auth()->user()->getRoleNames()[0];
+        $level_role_user = explode('-' , $roleUser)[0]; // PUSAT, dst        
+
         return view('/matchapro/page/profiling', [
             'breadcrumbs' => $breadcrumbs, 
             'pageConfigs' => $pageConfigs,
             'periode_profiling' => $periode_profiling,
-            'id_profiling_mandiri' => $id_profiling_mandiri
+            'id_profiling_mandiri' => $id_profiling_mandiri,
+            'canEdit' => auth()->user()->getPermissionsViaRoles()->contains('name', 'update-usaha-profiling-user'),
+            'wilayahAkses' => $wilayahAkses->count(),
+            'levelRole' => $level_role_user
         ]);
     }
 
     public function getData(Request $request)
     {
         
+        $roleUser = auth()->user()->getRoleNames();
+        // belum memiliki roles
+        if(!$roleUser->count()) {
+            $pageConfigs = ['blankPage' => true];
+            return view('/matchapro/misc/not-authorized', ['pageConfigs' => $pageConfigs]);
+        }
+
         $status_form = $request->input('status_form');
         
         $periode_id = $request->input('periode_id');
         
         $user = auth()->user();
+
+        $level_role_user = explode('-' , $roleUser[0])[0]; // PUSAT, dst
+        $isViewer = ($user->getPermissionsViaRoles()->contains('name', 'view-progress-profiling-nasional') || 
+            $user->getPermissionsViaRoles()->contains('name', 'view-progress-profiling-provinsi') || 
+            $user->getPermissionsViaRoles()->contains('name', 'view-progress-profiling-kabkot'));        
+        $isProfiler = $user->getPermissionsViaRoles()->contains('name', 'update-usaha-profiling-user');
+        $isProfilerViewer = $isViewer && $isProfiler;
+
+
+        $wilayahAkses = DB::table('matchapro_users_wilayah_akses')->where('user_id', $user->id)->get();
+        $provinsiAkses = $wilayahAkses->pluck('provinsi_id')->unique()->toArray();
+        $kabupatenAkses= $wilayahAkses->pluck('kabupaten_kota_id')->unique()->toArray();
+            
         
-        $snapshot_id = DB::table('area_provinsi')->max('snapshot_id');
-        
-        //Bukan Periode Mandiri
+        //Bukan Periode Mandiri (periodik)
         if ($periode_id != env('PERIODE_PROFILING_MANDIRI')) {
+
+            $lUpdateSubquery = DB::table('matchapro_temporary_update_profiling')
+                ->select(
+                    '*',
+                    DB::raw('ROW_NUMBER() OVER(PARTITION BY alokasi_profiling_id ORDER BY updated_at DESC) as rownum')
+                );            
             $query = DB::table('matchapro_alokasi_profiling as map')
-            ->join('business_perusahaan as bp', 'map.perusahaan_id', '=', 'bp.id')
-            ->join('area_provinsi as ap', function ($join) use ($snapshot_id) {
-                $join->on('ap.id', '=', 'bp.provinsi_id')
-                    ->where('ap.snapshot_id', '=', $snapshot_id);
-            })
-            ->join('area_kabupaten_kota as akk', 'akk.id', '=', 'bp.kabupaten_kota_id')
-            ->leftjoin('area_kecamatan as ak', 'ak.id', '=', 'bp.kecamatan_id')
-            ->leftjoin('area_kelurahan_desa as akd', 'akd.id', '=', 'bp.kelurahan_desa_id')
-            ->where('map.periode_id', $periode_id)
-            ->where('map.user_id', $user->id)
-            ->select([
-                'map.id', 
-                'bp.id as perusahaan_id',
-                'bp.kode', 
-                'bp.nama', 
-                'bp.alamat', 
-                'bp.provinsi_id',
-                'ap.kode as provinsi_kode',
-                'ap.nama as provinsi_nama',
-                'bp.kabupaten_kota_id', 
-                'akk.kode as kabupaten_kota_kode',
-                'akk.nama as kabupaten_kota_nama',
-                'bp.kecamatan_id', 
-                'ak.kode as kecamatan_kode',
-                'ak.nama as kecamatan_nama',
-                'bp.kelurahan_desa_id',
-                'akd.kode as kelurahan_desa_kode',
-                'akd.nama as kelurahan_desa_nama',
-                'map.status_form',
-                'map.updated_at'
-            ]);
+                ->join('business_perusahaan as bp', 'bp.id', '=', 'map.perusahaan_id')
+                ->join('matchapro_users as mu', 'mu.id', '=', 'map.user_id')                
+                ->leftJoinSub(
+                    $lUpdateSubquery,
+                    'l_update',
+                    function($join) {
+                        $join->on('l_update.alokasi_profiling_id', '=', 'map.id')
+                            ->where('l_update.rownum', '=', 1);
+                    }
+                )                                
+                ->leftJoin('matchapro_users as mu2', 'mu2.id', '=', 'l_update.updated_by')
+                ->where('map.periode_id', $periode_id)
+                ->where(function($query) use ($user, $provinsiAkses, $kabupatenAkses, $level_role_user, $isProfilerViewer, $isViewer) {
+                    if($isProfilerViewer) {
+                        if($level_role_user != 'PUSAT') {
+                            $query->where('map.user_id', $user->id)
+                                  ->orWhereIn('map.init_kabupaten_kota_id', $kabupatenAkses);
+                        }
+                    } else if ($isViewer) {
+                        if($level_role_user != 'PUSAT') {
+                            $query->whereIn('map.init_kabupaten_kota_id', $kabupatenAkses);
+                        }
+                    } else {
+                        // profiler
+                        $query->where('map.user_id', $user->id);
+                    }
+                })                               
+                ->select('map.*', 'bp.nama as nama_sbr', 'bp.alamat as alamat_sbr',
+                'l_update.nama_usaha', 'l_update.alamat', 'mu.username', 'mu2.username as last_updated_by_username');                                                    
 
         
             // Fetch data based on the selected periode
@@ -93,15 +128,11 @@ class ProfilingController extends Controller
                 $search = $request->search['value'];
                 $query->where(function ($q) use ($search) {
                     $q->where('bp.nama', 'like', "%$search%")
-                    ->orWhere('bp.kode', 'like', "%$search%")
-                    ->orWhere('bp.alamat', 'like', "%$search%")
-                    ->orWhere('bp.provinsi_id', 'like', "%$search%")
-                    ->orWhere('akk.kode', 'like', "%$search%")
-                    ->orWhere('akk.nama', 'like', "%$search%")
-                    ->orWhere('ak.kode', 'like', "%$search%")
-                    ->orWhere('ak.nama', 'like', "%$search%")
-                    ->orWhere('akd.kode', 'like', "%$search%")
-                    ->orWhere('akd.nama', 'like', "%$search%")
+                    ->orWhere('bp.alamat', 'like', "%$search%")                                                                                                                                            
+                    ->orWhere('l_update.alamat', 'like', "%$search%")
+                    ->orWhere('l_update.nama_usaha', 'like', "%$search%")
+                    ->orWhere('map.idsbr', 'like', "%$search%")
+                    ->orWhere('mu.username', 'like', "%$search%")
                     ->orWhere('map.status_form', 'like', "%$search%")
                     ->orWhere('map.updated_at', 'like', "%$search%");
                 });
@@ -110,69 +141,54 @@ class ProfilingController extends Controller
         }
 
         //Periode Mandiri
-        if($periode_id == env('PERIODE_PROFILING_MANDIRI')){
+        if($periode_id == env('PERIODE_PROFILING_MANDIRI')) {
 
-            $query = DB::table('matchapro_alokasi_profiling as map')
-                ->join('matchapro_temporary_update_profiling as mtup', function ($join) {
-                    $join->on('map.id', '=', 'mtup.alokasi_profiling_id')
-                        ->whereRaw('mtup.updated_at = (SELECT MAX(mtup_inner.updated_at) FROM matchapro_temporary_update_profiling as mtup_inner WHERE mtup_inner.alokasi_profiling_id = map.id)');
-                })
-                ->join('area_provinsi as ap', function ($join) use ($snapshot_id) {
-                    $join->on('ap.id', '=', 'mtup.provinsi_id')
-                        ->where('ap.snapshot_id', '=', $snapshot_id);
-                })
-                ->join('area_kabupaten_kota as akk', 'akk.id', '=', 'mtup.kabupaten_kota_id')
-                ->leftJoin('area_kecamatan as ak', 'ak.id', '=', 'mtup.kecamatan_id')
-                ->leftJoin('area_kelurahan_desa as akd', 'akd.id', '=', 'mtup.kelurahan_desa_id')
-                ->join('matchapro_users as mu', 'mu.id', '=', 'map.user_id')
-                ->leftJoin('matchapro_users as mu_updated', 'mu_updated.id', '=', 'mtup.updated_by') // New join
+            $lUpdateSubquery = DB::table('matchapro_temporary_update_profiling')
+                ->select(
+                    '*',
+                    DB::raw('ROW_NUMBER() OVER(PARTITION BY alokasi_profiling_id ORDER BY updated_at DESC) as rownum')
+                );            
+            $query = DB::table('matchapro_alokasi_profiling as map') 
+                ->join('matchapro_users as mu', 'mu.id', '=', 'map.user_id')               
+                ->leftJoinSub(
+                    $lUpdateSubquery,
+                    'l_update',
+                    function($join) {
+                        $join->on('l_update.alokasi_profiling_id', '=', 'map.id')
+                            ->where('l_update.rownum', '=', 1);
+                    }
+                )   
+                ->leftJoin('matchapro_users as mu2', 'mu2.id', '=', 'l_update.updated_by')                             
                 ->where('map.periode_id', $periode_id)
-                ->where('map.user_id', $user->id)
-                ->select([
-                    'map.id', 
-                    'map.perusahaan_id as perusahaan_id',
-                    'map.idsbr as kode', 
-                    'mtup.nama_usaha as nama', 
-                    'mtup.alamat', 
-                    'mtup.provinsi_id',
-                    'ap.kode as provinsi_kode',
-                    'ap.nama as provinsi_nama',
-                    'mtup.kabupaten_kota_id', 
-                    'akk.kode as kabupaten_kota_kode',
-                    'akk.nama as kabupaten_kota_nama',
-                    'mtup.kecamatan_id', 
-                    'ak.kode as kecamatan_kode',
-                    'ak.nama as kecamatan_nama',
-                    'mtup.kelurahan_desa_id',
-                    'akd.kode as kelurahan_desa_kode',
-                    'akd.nama as kelurahan_desa_nama',
-                    'map.action_type',
-                    'map.status_form',
-                    'map.updated_at',
-                    'mu_updated.nama as updated_by_nama', // Select the updated user's name or any other details you need
-                    'mu_updated.id as updated_by_id'
-                ]);
-
-
-                        
+                ->where(function($query) use ($user, $provinsiAkses, $kabupatenAkses, $level_role_user, $isProfilerViewer, $isViewer) {
+                    if($isProfilerViewer) {
+                        if($level_role_user != 'PUSAT') {
+                            $query->where('map.user_id', $user->id)
+                                  ->orWhereIn('map.init_kabupaten_kota_id', $kabupatenAkses);
+                        }
+                    } else if ($isViewer) {
+                        if($level_role_user != 'PUSAT') {
+                            $query->whereIn('map.init_kabupaten_kota_id', $kabupatenAkses);
+                        }
+                    } else {
+                        // profiler
+                        $query->where('map.user_id', $user->id);
+                    }
+                }) 
+                ->select('map.*', 'l_update.nama_usaha', 'l_update.alamat', 'mu.username',
+                    DB::raw('null as nama_sbr'), DB::raw('null as alamat_sbr'), 
+                    'mu2.username as last_updated_by_username'
+                );                                                
 
             if ($request->has('search') && $request->search['value'] != '') {
                 $search = $request->search['value'];
                 $query->where(function ($q) use ($search) {
-                    $q->where('mtup.nama_usaha', 'like', "%$search%")
+                    $q->where('l_update.alamat', 'like', "%$search%")
+                    ->orWhere('l_update.nama_usaha', 'like', "%$search%")
                     ->orWhere('map.idsbr', 'like', "%$search%")
-                    ->orWhere('mtup.alamat', 'like', "%$search%")
-                    ->orWhere('mtup.provinsi_id', 'like', "%$search%")
-                    ->orWhere('akk.kode', 'like', "%$search%")
-                    ->orWhere('akk.nama', 'like', "%$search%")
-                    ->orWhere('ak.kode', 'like', "%$search%")
-                    ->orWhere('ak.nama', 'like', "%$search%")
-                    ->orWhere('akd.kode', 'like', "%$search%")
-                    ->orWhere('akd.nama', 'like', "%$search%")
+                    ->orWhere('mu.username', 'like', "%$search%")
                     ->orWhere('map.status_form', 'like', "%$search%")
-                    ->orWhere('map.updated_at', 'like', "%$search%")
-                    ->orWhere('mu_updated.nama', 'like', "%$search%");
-                    
+                    ->orWhere('map.updated_at', 'like', "%$search%");
                 });
             }
         }
@@ -188,46 +204,36 @@ class ProfilingController extends Controller
         if ($status_form) {
             $query->where('map.status_form', $status_form);
         }
-            $query = $query->orderBy('map.updated_at', 'desc');
-            // Apply pagination and ordering
-            $length = $request->input('length');
-            $start = $request->input('start');
-            $orderColumn = $request->input('order')[0]['column'];
-            $orderDirection = $request->input('order')[0]['dir'];
-            $columns = ['id', 'perusahaan_id','kode', 'nama', 'alamat', 
-                'provinsi_id',
-                'provinsi_kode',
-                'provinsi_nama',
-                'kabupaten_kota_id',
-                'kabupaten_kota_kode',
-                'kabupaten_kota_nama',
-                'kecamatan_id',
-                'kecamatan_kode',
-                'kecamatan_nama',
-                'kelurahan_desa_id',
-                'kelurahan_desa_kode',
-                'kelurahan_desa_nama',
-                'status_form',
-                'updated_at'];
 
-            $query->orderBy($columns[$orderColumn], $orderDirection);
-            $total = $query->count();
+        $query = $query->orderBy('map.updated_at', 'desc');
+        // Apply pagination and ordering
+        $length = $request->input('length');
+        $start = $request->input('start');
+        $orderColumn = $request->input('order')[0]['column'];
+        $orderDirection = $request->input('order')[0]['dir'];
+        $columns = ['id', 'perusahaan_id','idsbr', 'nama_sbr', 'alamat_sbr', 
+            'nama_usaha', 'alamat', 'username',         
+            'status_form', 'action_type', 'last_updated_by_username',
+            'updated_at'];
 
-          
-            $data = $query->offset($start)->limit($length)->get();
-            $data = $data->map(function ($item) {
-                $item->perusahaan_id = Crypt::encrypt($item->perusahaan_id);
-                return $item;
-            });
-            
-            
-            return response()->json([
-                'draw' => intval($request->input('draw')),
-                'recordsTotal' => $total,
-                'recordsFiltered' => $total,
-                'data' => $data,
-                'countGroup' => $countGroup
-            ]);
+        $query->orderBy($columns[$orderColumn], $orderDirection);
+        $total = $query->count();
+
+        
+        $data = $query->offset($start)->limit($length)->get();
+        $data = $data->map(function ($item) {
+            $item->perusahaan_id = Crypt::encrypt($item->perusahaan_id);
+            return $item;
+        });
+        
+        
+        return response()->json([
+            'draw' => intval($request->input('draw')),
+            'recordsTotal' => $total,
+            'recordsFiltered' => $total,
+            'data' => $data,
+            'countGroup' => $countGroup
+        ]);
     }
 
     public function bhbuTransform($bhbu) {
@@ -385,8 +391,15 @@ class ProfilingController extends Controller
 
     public function getHistoryData(Request $request)
     {
-        $alokasi_id = $request->alokasi_id;
-        $perusahaan_id = $request->perusahaan_id;
+        $roleUser = auth()->user()->getRoleNames();
+        // belum memiliki roles
+        if(!$roleUser->count()) {
+            $pageConfigs = ['blankPage' => true];
+            return view('/matchapro/misc/not-authorized', ['pageConfigs' => $pageConfigs]);
+        }
+
+        $alokasi_id = $request->alokasi_id;        
+        $perusahaan_id = Crypt::decrypt($request->perusahaan_id);
         $snapshot_id = DB::table('area_provinsi')->max('snapshot_id');
 
         $temporary_data = DB::table('matchapro_temporary_update_profiling as mtup')
@@ -455,16 +468,25 @@ class ProfilingController extends Controller
     }
 
     public function cancelData(Request $request){
+
+        $roleUser = auth()->user()->getRoleNames();
+        // belum memiliki roles
+        if(!$roleUser->count()) {
+            $pageConfigs = ['blankPage' => true];
+            return view('/matchapro/misc/not-authorized', ['pageConfigs' => $pageConfigs]);
+        }
         
         $user = auth()->user();
         // Use a database transaction
         DB::beginTransaction();
 
+        $perusahaan_id = Crypt::decrypt($request->perusahaan_id);
+
         try {
             // Update status_form to "CANCELED" in matchapro_alokasi_profiling
             DB::table('matchapro_alokasi_profiling')
                 ->where('id', $request->alokasi_id)
-                ->where('perusahaan_id', $request->perusahaan_id)
+                ->where('perusahaan_id', $perusahaan_id)
                 ->update([
                     'status_form' => 'CANCELED',
                     'updated_at' => now()
@@ -517,6 +539,7 @@ class ProfilingController extends Controller
                     'kabupaten_kota_pindah' => $record->kabupaten_kota_pindah,
                     'idsbr_master' => $record->idsbr_master,
                     'validator' => $record->validator,
+                    'updated_by' => $user->id
                 ]);
             }
 
@@ -531,6 +554,13 @@ class ProfilingController extends Controller
     }
 
     public function exportExcel(Request $request){
+
+            $roleUser = auth()->user()->getRoleNames();
+            // belum memiliki roles
+            if(!$roleUser->count()) {
+                $pageConfigs = ['blankPage' => true];
+                return view('/matchapro/misc/not-authorized', ['pageConfigs' => $pageConfigs]);
+            }
         
             $periode_id = $request->input('periode_id');
             $filename = 'profiling_periodik_' . date('Y-m-d_His') . '.xlsx';
@@ -550,43 +580,64 @@ class ProfilingController extends Controller
         $periode_id = $request->input('periode_id');
         
         $user = auth()->user();
-        
-        $snapshot_id = DB::table('area_provinsi')->max('snapshot_id');
+
+        $roleUser = auth()->user()->getRoleNames();
+        $level_role_user = explode('-' , $roleUser)[0]; // PUSAT, dst
+
+        $isViewer = ($user->getPermissionsViaRoles()->contains('name', 'view-progress-profiling-nasional') || 
+            $user->getPermissionsViaRoles()->contains('name', 'view-progress-profiling-provinsi') || 
+            $user->getPermissionsViaRoles()->contains('name', 'view-progress-profiling-kabkot'));        
+        $isProfiler = $user->getPermissionsViaRoles()->contains('name', 'update-usaha-profiling-user');
+        $isProfilerViewer = $isViewer && $isProfiler;
+
+        $wilayahAkses = DB::table('matchapro_users_wilayah_akses')->where('user_id', $user->id)->get();
+        $provinsiAkses = $wilayahAkses->pluck('provinsi_id')->unique()->toArray();
+        $kabupatenAkses= $wilayahAkses->pluck('kabupaten_kota_id')->unique()->toArray();
         
         //Bukan Periode Mandiri
         if ($periode_id != env('PERIODE_PROFILING_MANDIRI')) {
+
+            $lUpdateSubquery = DB::table('matchapro_temporary_update_profiling')
+                ->select(
+                    '*',
+                    DB::raw('ROW_NUMBER() OVER(PARTITION BY alokasi_profiling_id ORDER BY updated_at DESC) as rownum')
+                );            
             $query = DB::table('matchapro_alokasi_profiling as map')
-            ->join('business_perusahaan as bp', 'map.perusahaan_id', '=', 'bp.id')
-            ->join('area_provinsi as ap', function ($join) use ($snapshot_id) {
-                $join->on('ap.id', '=', 'bp.provinsi_id')
-                    ->where('ap.snapshot_id', '=', $snapshot_id);
-            })
-            ->join('area_kabupaten_kota as akk', 'akk.id', '=', 'bp.kabupaten_kota_id')
-            ->leftjoin('area_kecamatan as ak', 'ak.id', '=', 'bp.kecamatan_id')
-            ->leftjoin('area_kelurahan_desa as akd', 'akd.id', '=', 'bp.kelurahan_desa_id')
-            ->where('map.periode_id', $periode_id)
-            ->where('map.user_id', $user->id)
-            ->select([
-                'map.id', 
-                'bp.id as perusahaan_id',
-                'bp.kode', 
-                'bp.nama', 
-                'bp.alamat', 
-                'bp.provinsi_id',
-                'ap.kode as provinsi_kode',
-                'ap.nama as provinsi_nama',
-                'bp.kabupaten_kota_id', 
-                'akk.kode as kabupaten_kota_kode',
-                'akk.nama as kabupaten_kota_nama',
-                'bp.kecamatan_id', 
-                'ak.kode as kecamatan_kode',
-                'ak.nama as kecamatan_nama',
-                'bp.kelurahan_desa_id',
-                'akd.kode as kelurahan_desa_kode',
-                'akd.nama as kelurahan_desa_nama',
-                'map.status_form',
-                'map.updated_at'
-            ]);
+                ->join('area_provinsi as ap', 'ap.id', '=', 'map.init_provinsi_id')
+                ->join('area_kabupaten_kota as akk', function($join) {
+                    $join->on('akk.id', '=', 'map.init_kabupaten_kota_id')
+                         ->on('akk.provinsi_id', '=', 'ap.id');
+                })
+                ->join('business_perusahaan as bp', 'bp.id', '=', 'map.perusahaan_id')
+                ->join('matchapro_users as mu', 'mu.id', '=', 'map.user_id')
+                ->leftJoinSub(
+                    $lUpdateSubquery,
+                    'l_update',
+                    function($join) {
+                        $join->on('l_update.alokasi_profiling_id', '=', 'map.id')
+                            ->where('l_update.rownum', '=', 1);
+                    }
+                )                                
+                ->where('map.periode_id', $periode_id)
+                ->where(function($query) use ($user, $provinsiAkses, $kabupatenAkses, $level_role_user, $isProfilerViewer, $isViewer) {
+                    if($isProfilerViewer) {
+                        if($level_role_user != 'PUSAT') {
+                            $query->where('map.user_id', $user->id)
+                                  ->orWhereIn('map.init_kabupaten_kota_id', $kabupatenAkses);
+                        }
+                    } else if ($isViewer) {
+                        if($level_role_user != 'PUSAT') {
+                            $query->whereIn('map.init_kabupaten_kota_id', $kabupatenAkses);
+                        }
+                    } else {
+                        // profiler
+                        $query->where('map.user_id', $user->id);
+                    }
+                })
+                ->select('map.*', 'bp.nama as nama_sbr', 'bp.alamat as alamat_sbr',
+                'l_update.nama_usaha', 'l_update.alamat', 'mu.username', 'ap.kode as kdprov', 'ap.nama as nmprov',
+                'akk.kode as kdkab', 'akk.nama as nmkab'
+                );            
 
         
             // Fetch data based on the selected periode
@@ -595,15 +646,11 @@ class ProfilingController extends Controller
                 $search = $request->search['value'];
                 $query->where(function ($q) use ($search) {
                     $q->where('bp.nama', 'like', "%$search%")
-                    ->orWhere('bp.kode', 'like', "%$search%")
-                    ->orWhere('bp.alamat', 'like', "%$search%")
-                    ->orWhere('bp.provinsi_id', 'like', "%$search%")
-                    ->orWhere('akk.kode', 'like', "%$search%")
-                    ->orWhere('akk.nama', 'like', "%$search%")
-                    ->orWhere('ak.kode', 'like', "%$search%")
-                    ->orWhere('ak.nama', 'like', "%$search%")
-                    ->orWhere('akd.kode', 'like', "%$search%")
-                    ->orWhere('akd.nama', 'like', "%$search%")
+                    ->orWhere('bp.alamat', 'like', "%$search%")                                                                                                                                            
+                    ->orWhere('l_update.alamat', 'like', "%$search%")
+                    ->orWhere('l_update.nama_usaha', 'like', "%$search%")
+                    ->orWhere('map.idsbr', 'like', "%$search%")
+                    ->orWhere('mu.username', 'like', "%$search%")
                     ->orWhere('map.status_form', 'like', "%$search%")
                     ->orWhere('map.updated_at', 'like', "%$search%");
                 });
@@ -614,67 +661,56 @@ class ProfilingController extends Controller
         //Periode Mandiri
         if($periode_id == env('PERIODE_PROFILING_MANDIRI')){
 
-            $query = DB::table('matchapro_alokasi_profiling as map')
-                ->join('matchapro_temporary_update_profiling as mtup', function ($join) {
-                    $join->on('map.id', '=', 'mtup.alokasi_profiling_id')
-                        ->whereRaw('mtup.updated_at = (SELECT MAX(mtup_inner.updated_at) FROM matchapro_temporary_update_profiling as mtup_inner WHERE mtup_inner.alokasi_profiling_id = map.id)');
+            $lUpdateSubquery = DB::table('matchapro_temporary_update_profiling')
+                ->select(
+                    '*',
+                    DB::raw('ROW_NUMBER() OVER(PARTITION BY alokasi_profiling_id ORDER BY updated_at DESC) as rownum')
+                );            
+            $query = DB::table('matchapro_alokasi_profiling as map') 
+                ->join('area_provinsi as ap', 'ap.id', '=', 'map.init_provinsi_id')
+                ->join('area_kabupaten_kota as akk', function($join) {
+                    $join->on('akk.id', '=', 'map.init_kabupaten_kota_id')
+                         ->on('akk.provinsi_id', '=', 'ap.id');
                 })
-                ->join('area_provinsi as ap', function ($join) use ($snapshot_id) {
-                    $join->on('ap.id', '=', 'mtup.provinsi_id')
-                        ->where('ap.snapshot_id', '=', $snapshot_id);
-                })
-                ->join('area_kabupaten_kota as akk', 'akk.id', '=', 'mtup.kabupaten_kota_id')
-                ->leftJoin('area_kecamatan as ak', 'ak.id', '=', 'mtup.kecamatan_id')
-                ->leftJoin('area_kelurahan_desa as akd', 'akd.id', '=', 'mtup.kelurahan_desa_id')
-                ->join('matchapro_users as mu', 'mu.id', '=', 'map.user_id')
-                ->leftJoin('matchapro_users as mu_updated', 'mu_updated.id', '=', 'mtup.updated_by') // New join
+                ->join('matchapro_users as mu', 'mu.id', '=', 'map.user_id')               
+                ->leftJoinSub(
+                    $lUpdateSubquery,
+                    'l_update',
+                    function($join) {
+                        $join->on('l_update.alokasi_profiling_id', '=', 'map.id')
+                            ->where('l_update.rownum', '=', 1);
+                    }
+                )                                
                 ->where('map.periode_id', $periode_id)
-                ->where('map.user_id', $user->id)
-                ->select([
-                    'map.id', 
-                    'map.perusahaan_id as perusahaan_id',
-                    'map.idsbr as kode', 
-                    'mtup.nama_usaha as nama', 
-                    'mtup.alamat', 
-                    'mtup.provinsi_id',
-                    'ap.kode as provinsi_kode',
-                    'ap.nama as provinsi_nama',
-                    'mtup.kabupaten_kota_id', 
-                    'akk.kode as kabupaten_kota_kode',
-                    'akk.nama as kabupaten_kota_nama',
-                    'mtup.kecamatan_id', 
-                    'ak.kode as kecamatan_kode',
-                    'ak.nama as kecamatan_nama',
-                    'mtup.kelurahan_desa_id',
-                    'akd.kode as kelurahan_desa_kode',
-                    'akd.nama as kelurahan_desa_nama',
-                    'map.action_type',
-                    'map.status_form',
-                    'map.updated_at',
-                    'mu_updated.nama as updated_by_nama', // Select the updated user's name or any other details you need
-                    'mu_updated.id as updated_by_id'
-                ]);
-
-
-                        
+                ->where(function($query) use ($user, $provinsiAkses, $kabupatenAkses, $level_role_user, $isProfilerViewer, $isViewer) {
+                    if($isProfilerViewer) {
+                        if($level_role_user != 'PUSAT') {
+                            $query->where('map.user_id', $user->id)
+                                  ->orWhereIn('map.init_kabupaten_kota_id', $kabupatenAkses);
+                        }
+                    } else if ($isViewer) {
+                        if($level_role_user != 'PUSAT') {
+                            $query->whereIn('map.init_kabupaten_kota_id', $kabupatenAkses);
+                        }
+                    } else {
+                        // profiler
+                        $query->where('map.user_id', $user->id);
+                    }
+                }) 
+                ->select('map.*', 'l_update.nama_usaha', 'l_update.alamat', 'mu.username',
+                    DB::raw('null as nama_sbr'), DB::raw('null as alamat_sbr'), 'ap.kode as kdprov', 'ap.nama as nmprov',
+                'akk.kode as kdkab', 'akk.nama as nmkab'
+                );                                                
 
             if ($request->has('search') && $request->search['value'] != '') {
                 $search = $request->search['value'];
                 $query->where(function ($q) use ($search) {
-                    $q->where('mtup.nama_usaha', 'like', "%$search%")
+                    $q->where('l_update.alamat', 'like', "%$search%")
+                    ->orWhere('l_update.nama_usaha', 'like', "%$search%")
                     ->orWhere('map.idsbr', 'like', "%$search%")
-                    ->orWhere('mtup.alamat', 'like', "%$search%")
-                    ->orWhere('mtup.provinsi_id', 'like', "%$search%")
-                    ->orWhere('akk.kode', 'like', "%$search%")
-                    ->orWhere('akk.nama', 'like', "%$search%")
-                    ->orWhere('ak.kode', 'like', "%$search%")
-                    ->orWhere('ak.nama', 'like', "%$search%")
-                    ->orWhere('akd.kode', 'like', "%$search%")
-                    ->orWhere('akd.nama', 'like', "%$search%")
+                    ->orWhere('mu.username', 'like', "%$search%")
                     ->orWhere('map.status_form', 'like', "%$search%")
-                    ->orWhere('map.updated_at', 'like', "%$search%")
-                    ->orWhere('mu_updated.nama', 'like', "%$search%");
-                    
+                    ->orWhere('map.updated_at', 'like', "%$search%");
                 });
             }
         }
@@ -691,48 +727,26 @@ class ProfilingController extends Controller
 
     private function generateRows($query, $periode_id)
     {
-        if($periode_id != env('PERIODE_PROFILING_MANDIRI')){
-            // Yield the header row
+         // Yield the header row
+         yield [
+            'IDSBR', 'Nama Usaha', 'Alamat', 'Provinsi', 'Kabupaten' , 'Status Form', 'Tipe Update', 
+            'Edited By', 'Updated At'
+            // Add more columns as needed
+        ];
+
+        foreach ($query->cursor() as $record) {
             yield [
-                'IDSBR', 'Nama Usaha', 'Alamat', 'Kode Wilayah', 'Nama Wilayah', 'Status Perusahaan', 'Updated At'
-                // Add more columns as needed
+                $record->idsbr,
+                $record->nama_usaha ? $record->nama_usaha : $record->nama_sbr,
+                $record->alamat ? $record->alamat : $record->alamat_sbr,                    
+                '['.$record->kdprov.'] '.$record->nmprov,
+                '['.$record->kdkab.'] '.$record->nmkab,
+                $record->status_form,
+                $record->action_type,
+                $record->username,
+                $record->updated_at,
+                // Add more fields as needed
             ];
-
-            foreach ($query->cursor() as $record) {
-                yield [
-                    $record->kode,
-                    $record->nama,
-                    $record->alamat,
-                    $record->provinsi_kode.'-'. $record->kabupaten_kota_kode. '-'.$record->kecamatan_kode.'-'.$record->kelurahan_desa_kode,
-                    $record->provinsi_nama.'-'. $record->kabupaten_kota_nama. '-'.$record->kecamatan_nama.'-'.$record->kelurahan_desa_nama,
-                    $record->status_form,
-                    $record->updated_at,
-                    // Add more fields as needed
-                ];
-            }
-        }
-        
-
-        if($periode_id == env('PERIODE_PROFILING_MANDIRI')){
-            // Yield the header row
-            yield [
-                'IDSBR', 'Nama Usaha', 'Alamat', 'Kode Wilayah', 'Nama Wilayah', 'Status Perusahaan', 'Upadated At', 'Updated By'
-                // Add more columns as needed
-            ];
-
-            foreach ($query->cursor() as $record) {
-                yield [
-                    $record->kode,
-                    $record->nama,
-                    $record->alamat,
-                    $record->provinsi_kode.'-'. $record->kabupaten_kota_kode. '-'.$record->kecamatan_kode.'-'.$record->kelurahan_desa_kode,
-                    $record->provinsi_nama.'-'. $record->kabupaten_kota_nama. '-'.$record->kecamatan_nama.'-'.$record->kelurahan_desa_nama,
-                    $record->status_form,
-                    $record->updated_at,
-                    $record->updated_by_nama,
-                    // Add more fields as needed
-                ];
-            }
         }
        
     }

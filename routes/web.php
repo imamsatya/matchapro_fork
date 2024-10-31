@@ -43,16 +43,20 @@ Route::middleware(['sso-bps'])->group(function () {
 
     //Progress Profiling
     //Wilayah
-    Route::get('profiling/progress/wilayah', [ProgressProfilingController::class, 'wilayah_index'])->name('progress_wilayah.index');
+    Route::get('profiling/progress/periodik', [ProgressProfilingController::class, 'wilayah_index'])->name('progress_wilayah.index');
     Route::get('profiling/progress/status_statistics', [ProgressProfilingController::class, 'getStatusStatistics'])->name('progress_wilayah.status_statistics');
+    Route::get('profiling/progress/mandiri', [ProgressProfilingController::class, 'mandiri_index'])->name('progress_mandiri.index');
+    Route::post('profiling/progress/mandiri/data', [ProgressProfilingController::class, 'getDataMandiri'])->name('progress_mandiri_data');
+
     //Profiler
     Route::get('profiling/progress/profiler', [ProgressProfilingController::class, 'profiler_index'])->name('progress_profiler.index');
+    Route::post('profiling/progress/wilayah/data', [ProgressProfilingController::class, 'getDataProgres'])->name('progres_wilayah_data');
 
     //Direktori Usaha
     Route::get('direktori-usaha', [DirektoriUsahaController::class, 'index'])->name('direktori_usaha.index');
     Route::post('direktori-usaha/data', [DirektoriUsahaController::class, 'getDirektoriUsahaData'])->name('direktori_usaha.data');
     Route::post('direktori-usaha/data-by-id', [DirektoriUsahaController::class, 'getDirektoriUsahaDataById'])->name('direktori_usaha.data_by_id');
-    Route::get('direktori-usaha/export', [DirektoriUsahaController::class, 'exportExcelPeriodik'])->name('export.excel');
+    Route::get('direktori-usaha/export', [DirektoriUsahaController::class, 'exportExcel'])->name('export.excel');
 
     //Profiling
     Route::get('profiling', [ProfilingController::class, 'index'])->name('profiling.index');
@@ -101,6 +105,10 @@ Route::middleware(['sso-bps'])->group(function () {
     Route::post('user/update', [UserController::class, 'updateUser'])->name('user.list.update');
     Route::post('user/update-wilayah', [UserController::class, 'updateUserWilayah'])->name('user.list.update.wilayah');
     Route::post('user/wilayah-akses', [UserController::class, 'getWilayahAksesUser'])->name('user.wilayah.akses');
+    Route::post('user/delete', [UserController::class, 'deleteUser'])->name('user.delete');
+    Route::post('user/add', [UserController::class, 'addUser'])->name('user.add');
+
+    Route::get('faq', [UserController::class, 'faqPage'])->name('faq.index');
 });
 
 //End Matcha Pro

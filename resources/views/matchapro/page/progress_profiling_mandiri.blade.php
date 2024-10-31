@@ -1,6 +1,6 @@
 @extends('matchapro/layouts/contentLayoutMaster')
 
-@section('title', 'Progress Profiling - Periodik')
+@section('title', 'Progress Profiling - Mandiri')
 
 @section('vendor-style')
     <link rel="stylesheet" href="{{ asset(mix('vendors/css/extensions/sweetalert2.min.css')) }}">
@@ -8,7 +8,7 @@
 @endsection
 
 @section('content')
-    @if(!$wilayahAkses && $levelRole != 'PUSAT')
+    @if(!$wilayahAkses && $levelRole != 'PUSAT' )
     <div class="alert alert-danger alert-dismissible fade show mb-2" role="alert">
         <h4 class="alert-heading">Informasi</h4>
         <div class="alert-body">
@@ -43,7 +43,7 @@
                         </div>
                         <div class="col-xl-3 col-sm-6 col-12 mb-2 mb-xl-0">
                             <div class="d-flex flex-row">
-                                <div class="avatar bg-light-warning me-2">
+                                <div class="avatar bg-light-info me-2">
                                     <div class="avatar-content">
                                         <i data-feather="edit-2" class="avatar-icon"></i>
                                     </div>
@@ -56,7 +56,7 @@
                         </div>
                         <div class="col-xl-3 col-sm-6 col-12 mb-2 mb-sm-0">
                             <div class="d-flex flex-row">
-                                <div class="avatar bg-light-info me-2">
+                                <div class="avatar bg-light-danger me-2">
                                     <div class="avatar-content">
                                         <i data-feather="send" class="avatar-icon"></i>
                                     </div>
@@ -106,17 +106,7 @@
                         <select id="kabupaten_kota" class="select2 form-select">
                             <option value="">-- All Kabupaten/Kota --</option>                           
                         </select>
-                    </div>
-                    <div class="mb-6">
-                        <label class="form-label" for="tahun_referensi">Tahun Profiling <span
-                                class="text-danger">*</span></label>
-                        <select id="tahun_referensi" class="select2 form-select">
-                            <option value="">-- Pilih Tahun --</option>
-                            @foreach ($tahun as $option)
-                                <option value="{{ $option }}" {{ $option == date('Y') ? 'selected' : '' }}>{{ $option }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+                    </div>                    
                     <div class="mt-1 d-grid">
                         <button class="btn btn-relief-primary" id="filter-progres">
                         <i data-feather="filter" class=""></i>
@@ -331,31 +321,16 @@
 
             $("#filter-progres").on('click', function() {
                 let provinsi = $("#provinsi").val();
-                let kabupaten = $("#kabupaten_kota").val();
-                let tahun_profiling = $("#tahun_referensi").val();
-                                
-                if(!tahun_profiling) {
-                    Swal.fire({
-                        title: 'Error!',
-                        text: 'Tahun profilng harus terpilih!',
-                        icon: 'error',
-                        customClass: {
-                            confirmButton: 'btn btn-danger'
-                        },
-                        buttonsStyling: false
-                    });
-                    return;
-                }
+                let kabupaten = $("#kabupaten_kota").val();                                                               
 
                 blockProgress('body');                 
                 $.ajax({
-                    url: '{{ route("progres_wilayah_data") }}',
+                    url: '{{ route("progress_mandiri_data") }}',
                     type: 'POST',
                     dataType: 'json',
                     data: {
                         'provinsi': provinsi,
-                        'kabupaten': kabupaten,
-                        'tahun_profiling': tahun_profiling,
+                        'kabupaten': kabupaten,                        
                         '_token': '{{ csrf_token() }}',                        
                     },
                     success: function (response) {

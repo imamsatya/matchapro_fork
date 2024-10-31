@@ -27,6 +27,15 @@
 @endsection
 
 @section('content')
+    @if(!$wilayahAkses && $levelRole != 'PUSAT')
+    <div class="alert alert-danger alert-dismissible fade show mb-2" role="alert">
+        <h4 class="alert-heading">Informasi</h4>
+        <div class="alert-body">
+            User belum memiliki akses terhadap wilayah manapun!
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    @endif
     {{-- Welcome --}}
     <section class="welcome-section py-5 text-center" style="background: #78b34d; color: #fff;">
         <div class=" animate__animated animate__fadeInUp">

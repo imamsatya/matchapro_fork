@@ -12,7 +12,14 @@ class MasterWilayahController extends Controller
         return $latestSnapshot->snapshot_id;
     }
 
-    public function getMasterProvinsi() {        
+    public function getMasterProvinsi() {  
+        $roleUser = auth()->user()->getRoleNames();
+        // belum memiliki roles
+        if(!$roleUser->count()) {
+            $pageConfigs = ['blankPage' => true];
+            return view('/matchapro/misc/not-authorized', ['pageConfigs' => $pageConfigs]);
+        }
+              
         $snapshot_id = $this->getLatestSnapshot();        
         $masterProvinsi = DB::table('area_provinsi')->where('snapshot_id', $snapshot_id)                
                 ->get();
