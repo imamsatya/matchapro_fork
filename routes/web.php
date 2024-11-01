@@ -13,7 +13,7 @@ use App\Http\Controllers\FormUpdateUsahaController;
 use App\Http\Controllers\ProfilingMandiriController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MasterWilayahController;
-use App\Http\Controllers\MasterKBLi;
+use App\Http\Controllers\MasterKBLI;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\MiscController;
 /*

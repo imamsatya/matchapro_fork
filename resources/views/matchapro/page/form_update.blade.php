@@ -1813,7 +1813,7 @@
                 if (!latitudeRegex.test(outputForm.latitude)) {
                     $("#latitude").addClass('is-invalid');
                     listError['latitude'] =
-                        'Latitude harus memiliki format yang valid (contoh: -6.2315085326216)';
+                        'Latitude harus memiliki format yang valid (contoh: -6.2315085326216). Max 15 digit dibelakang koma';
                 } else {
                     $("#latitude").removeClass('is-invalid');
                     delete listError.latitude;
@@ -1831,7 +1831,7 @@
                 if (!longitudeRegex.test(outputForm.longitude)) {
                     $("#longitude").addClass('is-invalid');
                     listError['longitude'] =
-                        'Longitude harus memiliki format yang valid (contoh: 106.63301713765)';
+                        'Longitude harus memiliki format yang valid (contoh: 106.63301713765). Max 15 digit dibelakang koma';
                 } else {
                     $("#longitude").removeClass('is-invalid');
                     delete listError.longitude;

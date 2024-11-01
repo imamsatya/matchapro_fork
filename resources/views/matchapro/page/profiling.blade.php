@@ -181,6 +181,12 @@
                                         <table id="data_profiling" class="dt-responsive table " style="width: 100%">
                                             <thead>
                                                 <tr>
+                                                    <th>
+                                                        <div class="form-check"> 
+                                                            <input class="form-check-input" type="checkbox" value="" id="checkboxSelectAll" />
+                                                            <label class="form-check-label" for="checkboxSelectAll"></label>
+                                                        </div>
+                                                    </th>
                                                     <th>IDSBR</th>
                                                     <th>Nama</th>
                                                     <th>Alamat</th>                                                    
@@ -193,6 +199,7 @@
                                             </thead>
                                             <tfoot>
                                                 <tr>
+                                                    <th></th>
                                                     <th>IDSBR</th>
                                                     <th>Nama</th>
                                                     <th>Alamat</th>                                                                                                        
@@ -666,7 +673,24 @@
                 // language: {
                 //     processing: '<div class="d-flex justify-content-center align-items-center"><p class="me-50 mb-0">Mohon Menunggu...</p></div> <div class="spinner-border text-primary" role="status">',
                 // },
-                columns: [{
+                columns: [
+                    {
+                        data: null,
+                        orderable: false, 
+                        render: function (data, type, full, meta) {
+                            console.log(data)
+                            return (
+                            `<div class="form-check"> <input class="form-check-input dt-checkboxes" type="checkbox" value="" 
+                                id="checkbox-${data}" />
+                                <label class="form-check-label" for="checkbox-${data}"></label></div>`
+                            );
+                        },
+                        checkboxes: {
+                            selectAllRender:
+                            '<div class="form-check"> <input class="form-check-input" type="checkbox" value="" id="checkboxSelectAll" /><label class="form-check-label" for="checkboxSelectAll"></label></div>'
+                        }
+                    },                    
+                    {
                         data: 'idsbr',
                         title: 'IDSBR',
                         width: '1%'

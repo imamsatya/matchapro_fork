@@ -162,6 +162,8 @@ class ProgressProfilingController extends Controller
      */
     public function wilayah_index()
     {
+        // $pageConfigs = ['blankPage' => true];
+        // return view('/matchapro/misc/under-maintenance', ['pageConfigs' => $pageConfigs]);        
 
         $roleUser = auth()->user()->getRoleNames();
         // belum memiliki roles
