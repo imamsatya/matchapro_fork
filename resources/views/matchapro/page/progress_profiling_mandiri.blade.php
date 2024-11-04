@@ -1,6 +1,6 @@
 @extends('matchapro/layouts/contentLayoutMaster')
 
-@section('title', 'Progress Profiling - Periodik')
+@section('title', 'Progress Profiling - Mandiri')
 
 @section('vendor-style')
     <link rel="stylesheet" href="{{ asset(mix('vendors/css/extensions/sweetalert2.min.css')) }}">
@@ -8,14 +8,14 @@
 @endsection
 
 @section('content')
-    @if (!$wilayahAkses && $levelRole != 'PUSAT')
-        <div class="alert alert-danger alert-dismissible fade show mb-2" role="alert">
-            <h4 class="alert-heading">Informasi</h4>
-            <div class="alert-body">
-                User belum memiliki akses terhadap wilayah manapun!
-            </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    @if(!$wilayahAkses && $levelRole != 'PUSAT' )
+    <div class="alert alert-danger alert-dismissible fade show mb-2" role="alert">
+        <h4 class="alert-heading">Informasi</h4>
+        <div class="alert-body">
+            User belum memiliki akses terhadap wilayah manapun!
         </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
     @endif
     <div class="row match-height">
         <div class="col-lg-8 col-md-8 col-12">
@@ -36,33 +36,33 @@
                                     </div>
                                 </div>
                                 <div class="my-auto">
-                                    <h4 class="fw-bolder mb-0 open-count">{{ $status_usaha['OPEN'] }}</h4>
+                                    <h4 class="fw-bolder mb-0 open-count">{{ $status_usaha['OPEN']; }}</h4>
                                     <p class="card-text font-small-3 mb-0">Open</p>
                                 </div>
                             </div>
                         </div>
                         <div class="col-xl-3 col-sm-6 col-12 mb-2 mb-xl-0">
                             <div class="d-flex flex-row">
-                                <div class="avatar bg-light-warning me-2">
+                                <div class="avatar bg-light-info me-2">
                                     <div class="avatar-content">
                                         <i data-feather="edit-2" class="avatar-icon"></i>
                                     </div>
                                 </div>
                                 <div class="my-auto">
-                                    <h4 class="fw-bolder mb-0 draft-count">{{ $status_usaha['DRAFT'] }}</h4>
+                                    <h4 class="fw-bolder mb-0 draft-count">{{ $status_usaha['DRAFT']; }}</h4>
                                     <p class="card-text font-small-3 mb-0">Draft</p>
                                 </div>
                             </div>
                         </div>
                         <div class="col-xl-3 col-sm-6 col-12 mb-2 mb-sm-0">
                             <div class="d-flex flex-row">
-                                <div class="avatar bg-light-info me-2">
+                                <div class="avatar bg-light-danger me-2">
                                     <div class="avatar-content">
                                         <i data-feather="send" class="avatar-icon"></i>
                                     </div>
                                 </div>
                                 <div class="my-auto">
-                                    <h4 class="fw-bolder mb-0 submitted-count">{{ $status_usaha['SUBMITTED'] }}</h4>
+                                    <h4 class="fw-bolder mb-0 submitted-count">{{ $status_usaha['SUBMITTED']; }}</h4>
                                     <p class="card-text font-small-3 mb-0">Submitted</p>
                                 </div>
                             </div>
@@ -75,7 +75,7 @@
                                     </div>
                                 </div>
                                 <div class="my-auto">
-                                    <h4 class="fw-bolder mb-0 approved-count">{{ $status_usaha['APPROVED'] }}</h4>
+                                    <h4 class="fw-bolder mb-0 approved-count">{{ $status_usaha['APPROVED']; }}</h4>
                                     <p class="card-text font-small-3 mb-0">Approved</p>
                                 </div>
                             </div>
@@ -104,27 +104,15 @@
                     <div class="mb-6" id="container-kabupaten-kota">
                         <label class="form-label" for="kabupaten_kota">Kabupaten/Kota</label>
                         <select id="kabupaten_kota" class="select2 form-select">
-                            <option value="">-- All Kabupaten/Kota --</option>
+                            <option value="">-- All Kabupaten/Kota --</option>                           
                         </select>
-                    </div>
-                    <div class="mb-6">
-                        <label class="form-label" for="tahun_referensi">Tahun Profiling <span
-                                class="text-danger">*</span></label>
-                        <select id="tahun_referensi" class="select2 form-select">
-                            <option value="">-- Pilih Tahun --</option>
-                            <option value="2003">2003</option>
-                            @foreach ($tahun as $option)
-                                <option value="{{ $option }}" {{ $option == date('Y') ? 'selected' : '' }}>
-                                    {{ $option }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+                    </div>                    
                     <div class="mt-1 d-grid">
                         <button class="btn btn-relief-primary" id="filter-progres">
-                            <i data-feather="filter" class=""></i>
-                            Filter</button>
+                        <i data-feather="filter" class=""></i>
+                        Filter</button>
                     </div>
-
+                    
                 </div>
             </div>
         </div>
@@ -157,24 +145,11 @@
                     <h4 class="card-title">Profiling Progress Kab/Kota</h4>
                     <i data-feather="help-circle" class="font-medium-3 text-muted cursor-pointer"></i>
                 </div>
-                <div class="card-body p-0">
+                <div class="card-body p-0">                   
                     <div id="progress-profiling-chart" class="my-2"></div>
                 </div>
             </div>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h4 class="card-title">Profiling Progress Kab/Kota</h4>
-                    <i data-feather="help-circle" class="font-medium-3 text-muted cursor-pointer"></i>
-                </div>
-                <div class="card-body p-0">
-                    <div id="progress-profiling-chart-user" class="my-2"></div>
-                </div>
-            </div>
-        </div>
+        </div>    
     </div>
     <div class="row">
         <div class="col-12">
@@ -183,7 +158,7 @@
                     <h4 class="card-title">Profiling Progress User</h4>
                     <i data-feather="help-circle" class="font-medium-3 text-muted cursor-pointer"></i>
                 </div>
-                <div class="card-body p-0">
+                <div class="card-body p-0">                   
                     <div id="progress-profiling-chart-user" class="my-2"></div>
                 </div>
             </div>
@@ -262,7 +237,7 @@
                         stops: [0, 100]
                     }
                 },
-                series: [{{ $total_target == 0 ? 0 : ($total_approved / $total_target) * 100 }}],
+                series: [{{ $total_target == 0 ? 0 : ($total_approved / $total_target * 100) }}],
                 stroke: {
                     lineCap: 'round'
                 },
@@ -339,42 +314,26 @@
                 colors: [window.colors.solid.primary, window.colors.solid.info, window.colors.solid.warning]
             };
 
-            var progressProfilingChartUser = new ApexCharts(document.querySelector(
-                "#progress-profiling-chart-user"),
+            var progressProfilingChartUser = new ApexCharts(document.querySelector("#progress-profiling-chart-user"),
                 progresOptionsUser);
             progressProfilingChartUser.render();
-
+        
 
             $("#filter-progres").on('click', function() {
                 let provinsi = $("#provinsi").val();
-                let kabupaten = $("#kabupaten_kota").val();
-                let tahun_profiling = $("#tahun_referensi").val();
+                let kabupaten = $("#kabupaten_kota").val();                                                               
 
-                if (!tahun_profiling) {
-                    Swal.fire({
-                        title: 'Error!',
-                        text: 'Tahun profilng harus terpilih!',
-                        icon: 'error',
-                        customClass: {
-                            confirmButton: 'btn btn-danger'
-                        },
-                        buttonsStyling: false
-                    });
-                    return;
-                }
-
-                blockProgress('body');
+                blockProgress('body');                 
                 $.ajax({
-                    url: '{{ route('progres_wilayah_data') }}',
+                    url: '{{ route("progress_mandiri_data") }}',
                     type: 'POST',
                     dataType: 'json',
                     data: {
                         'provinsi': provinsi,
-                        'kabupaten': kabupaten,
-                        'tahun_profiling': tahun_profiling,
-                        '_token': '{{ csrf_token() }}',
+                        'kabupaten': kabupaten,                        
+                        '_token': '{{ csrf_token() }}',                        
                     },
-                    success: function(response) {
+                    success: function (response) {
                         // update status info
                         $('.open-count').html(response.status_usaha['OPEN']);
                         $('.draft-count').html(response.status_usaha['DRAFT']);
@@ -385,35 +344,29 @@
                         // update chart lingkaran
                         $(".completed-count").html(response.total_approved);
                         $(".inprogress-count").html(response.total_inprogress);
-                        goalOverviewChartOptions.series = response.total_target == 0 ? [0] : [((
-                                response.total_approved / response.total_target) * 100)
-                            .toFixed(2)
-                        ];
-                        goalOverviewChart = new ApexCharts($goalOverviewChart,
-                            goalOverviewChartOptions);
+                        goalOverviewChartOptions.series = response.total_target == 0 ? [0] : [((response.total_approved / response.total_target) * 100).toFixed(2)];
+                        goalOverviewChart = new ApexCharts($goalOverviewChart, goalOverviewChartOptions);
                         goalOverviewChart.render();
 
                         // update bar chart                            
-                        if (progressProfilingChart) {
+                        if(progressProfilingChart) {
                             progressProfilingChart.destroy();
-                        }
+                        }                        
                         progressProfilingChartOptions.xaxis.categories = response.kabkot_axis;
                         progressProfilingChartOptions.series = response.kabkot_data;
-                        progressProfilingChart = new ApexCharts(document.querySelector(
-                            "#progress-profiling-chart"), progressProfilingChartOptions);
+                        progressProfilingChart = new ApexCharts(document.querySelector("#progress-profiling-chart"), progressProfilingChartOptions);                        
                         progressProfilingChart.render();
 
 
                         // update bar chart user                        
-                        if (progressProfilingChartUser) {
+                        if(progressProfilingChartUser) {
                             progressProfilingChartUser.destroy();
-                        }
+                        }                        
                         progresOptionsUser.xaxis.categories = response.user_axis;
                         progresOptionsUser.series = response.user_data;
-                        progressProfilingChartUser = new ApexCharts(document.querySelector(
-                            "#progress-profiling-chart-user"), progresOptionsUser);
+                        progressProfilingChartUser = new ApexCharts(document.querySelector("#progress-profiling-chart-user"), progresOptionsUser);                        
                         progressProfilingChartUser.render();
-
+                        
 
                         unblockProgress('body');
                     },
@@ -427,7 +380,7 @@
                                 confirmButton: 'btn btn-danger'
                             },
                             buttonsStyling: false
-                        });
+                        });                        
                     }
                 })
             })
@@ -445,9 +398,9 @@
 
                 let findCache = kabupatenCache.find(kc => kc.provinsi == provinsi);
                 if (findCache) {
-                    setOption($('#kabupaten_kota'), findCache.kabupaten_kota);
+                    setOption($('#kabupaten_kota'), findCache.kabupaten_kota);                    
                     return;
-                }
+                }            
 
                 blockProgress($("#container-kabupaten-kota"));
                 $.ajax({
@@ -455,9 +408,9 @@
                     type: 'POST',
                     data: {
                         provinsi: provinsi,
-                        _token: '{{ csrf_token() }}',
+                        _token: '{{ csrf_token() }}',                        
                     },
-                    success: function(response) {
+                    success: function(response) {                        
                         let wilKab = [{
                             id: '',
                             text: '-- All Kabupaten/Kota --'
@@ -467,13 +420,13 @@
                                 id: response[i].id,
                                 text: '[' + response[i].kode + ']' + ' ' + response[i]
                                     .nama
-                            })
+                            })                         
                         }
                         kabupatenCache.push({
                             provinsi: provinsi,
                             kabupaten_kota: wilKab
                         })
-                        setOption($('#kabupaten_kota'), wilKab);
+                        setOption($('#kabupaten_kota'), wilKab);                        
                         unblockProgress($("#container-kabupaten-kota"));
                     },
                     error: function(xhr) {

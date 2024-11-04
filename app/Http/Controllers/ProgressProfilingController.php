@@ -16,21 +16,29 @@ class ProgressProfilingController extends Controller
         $this->masterWilayah = $masterWilayah;        
     }
 
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function wilayah_index()
-    {
-        
-        $mp = $this->masterWilayah->getMasterProvinsi();
+    public function mandiri_index() {
+        $roleUser = auth()->user()->getRoleNames();
+        // belum memiliki roles
+        if(!$roleUser->count()) {
+            $pageConfigs = ['blankPage' => true];
+            return view('/matchapro/misc/not-authorized', ['pageConfigs' => $pageConfigs]);
+        }
+
+        $isAbleToviewPage = auth()->user()->getPermissionsViaRoles()->contains('name', 'view-progress-profiling-nasional') || auth()->user()->getPermissionsViaRoles()->contains('name', 'view-progress-profiling-provinsi') || auth()->user()->getPermissionsViaRoles()->contains('name', 'view-progress-profiling-kabkot');
+        if(!$isAbleToviewPage) {
+            $pageConfigs = ['blankPage' => true];
+            return view('/matchapro/misc/not-authorized', ['pageConfigs' => $pageConfigs]);
+        }
+
+
+            
         $pageConfigs = ['sidebarCollapsed' => false];
         $breadcrumbs = [
-            ['link' => "home", 'name' => "Progress Profiling"], ['name' => "Wilayah"]
+            ['link' => "home", 'name' => "Home"], ['name' => "Progress Profiling - Mandiri"]
         ];
-        $user = Auth::user();
-        $snapshot_id = DB::table('area_provinsi')->max('snapshot_id');
+
+        // master provinsi user
+        $mp = $this->masterWilayah->getMasterProvinsiUser();                
         
         $tahun = DB::table('matchapro_periode_profiling')
             ->pluck('start_date')
@@ -38,172 +46,321 @@ class ProgressProfilingController extends Controller
                 return \Carbon\Carbon::parse($date)->year;
             })
             ->unique()
-            ->values();
+            ->values(); 
             
-        
+        $role_user = auth()->user()->getRoleNames()[0]; // PUSAT-ADMIN, dst
+        $level_role_user = explode('-' , $role_user)[0]; // PUSAT, dst
 
-        //Permission  
-        //view-progres-profiling-nasional, view-progres-profiling-provinsi,view-progres-profiling-kabkot
-        
-        //Cel Level User
-        //1. Cek Role lewat roles
-        //2. get dari matchapro_user_wilayah_akses by kabupaten_kota_id
-        
-        // dd(auth()->user()->getPermissionsViaRoles());
+        $listProfiling = DB::table('matchapro_periode_profiling')
+            ->where('id', '=', env('PERIODE_PROFILING_MANDIRI'))
+            ->pluck('id')->unique()->toArray();  
 
-        //Pusat
-        if(auth()->user()->getPermissionsViaRoles()->contains('name', 'view-progress-profiling-nasional')){
-            
-        }
+        $wilayahAkses = DB::table('matchapro_users_wilayah_akses')->where('user_id', auth()->user()->id)->get();        
+        $provinsiAkses = $wilayahAkses->pluck('provinsi_id')->unique()->toArray();
+        $kabupatenAkses= $wilayahAkses->pluck('kabupaten_kota_id')->unique()->toArray();
 
-
-        //Pusat
-        $provinsi = DB::table('area_provinsi')
-            ->where('snapshot_id', $snapshot_id)
+        $data = DB::table('matchapro_alokasi_profiling as pp')  
+            ->join('area_provinsi as ap', 'ap.id', '=', 'pp.init_provinsi_id')          
+            ->join('area_kabupaten_kota as akk', 'akk.id', '=', 'pp.init_kabupaten_kota_id')
+            ->join('matchapro_users as mm', 'mm.id', '=', 'pp.user_id')
+            ->select('pp.id', 'pp.user_id', 'pp.status_form', 'pp.idsbr', 
+                'pp.perusahaan_id', 'pp.periode_id', 'pp.action_type', DB::raw('concat(ap.kode, \' - \', ap.nama) as nmprov'),
+                DB::raw('concat(akk.kode, \' - \', akk.nama) as nmkab'), 'ap.kode as kdprov', 'akk.kode as kdkab',
+                'mm.username'
+                )
+            ->whereIn('periode_id', $listProfiling)                                    
+            ->when($level_role_user != 'PUSAT', function($query) use ($provinsiAkses) {            
+                $query->whereIn('init_provinsi_id', $provinsiAkses);
+                
+            })
+            ->when($level_role_user != 'PUSAT', function($query) use ($kabupatenAkses) {
+                $query->whereIn('init_kabupaten_kota_id', $kabupatenAkses);                
+            })            
             ->get(); 
-        
-        $kabupaten = DB::table('area_kabupaten_kota')
-            ->whereIn('provinsi_id', $provinsi->pluck('id'))
-            ->get();
 
+        // progres by status
+        $statusCounts = $data->pluck('status_form')->map(function ($status) {
+            if ($status === 'REJECTED') {
+                return 'DRAFT';
+            }
+            return $status;
+        })->countBy();
+        $statusCounts = collect([
+            'OPEN' => $statusCounts->get('OPEN', 0),
+            'DRAFT' => $statusCounts->get('DRAFT', 0) + $statusCounts->get('REJECTED', 0),
+            'SUBMITTED' => $statusCounts->get('SUBMITTED', 0),
+            'APPROVED' => $statusCounts->get('APPROVED', 0),
+        ]);
 
-        //Provinsi
-        // if(auth()->user()->getPermissionsViaRoles()->contains('name', 'view-progress-profiling-provinsi')){
-        //     dd('user provinsi');
-        //     dd($user);
-        // }
-        // //Provinsi
-        // $provinsi_user_id = DB::table('matchapro_users_wilayah_akses')
-        //         ->where('user_id', $user->id)
-        //         ->get()->pluck('provinsi_id');
-        
-        // $provinsi = DB::table('area_provinsi')
-        //         ->where('snapshot_id', $snapshot_id)
-        //         ->get(); 
-        
-        // $kabupaten_user_id = DB::table('matchapro_users_wilayah_akses')
-        //         ->where('user_id', $user->id)
-        //         ->get()->pluck('kabupaten_kota_id');
-        
+        // progres by kabupaten/kota        
+        $kabupatenKotaDetails = $data->pluck('nmkab')->unique()->toArray();
+        $kabupaten_axis = [];
+        $listStatus =  ['OPEN', 'DRAFT', 'SUBMITTED', 'APPROVED'];
+        $resultStatus = [];
+        foreach($listStatus as $status) {
+            $tempCount = [];
+            $tempKabupaten = [];
+            foreach ($kabupatenKotaDetails as $nmkab) {
+                $count = $data->where('status_form', $status)->where('nmkab', $nmkab)->count();
+                $tempCount[] = $count;
+                $tempKabupaten[] = $nmkab;
+            }        
+            $resultStatus[] = [
+                'name' => $status,
+                'data' => $tempCount
+            ];
+            $kabupaten_axis = $tempKabupaten;
+        }    
 
-
-        // $kabupaten = DB::table('area_kabupaten_kota')
-        //         ->whereIn('provinsi_id', $provinsi->pluck('id'))
-        //         ->get();
-    
-
-        // //Kabupaten/Kota
-        // if(auth()->user()->getPermissionsViaRoles()->contains('name', 'view-progress-profiling-kabkot')){
-        //     dd('user kab');
-        // }
-
-        // Get the authenticated user
-        $user = Auth::user();
-
-        // Get all role names for the user
-        $roles = $user->getRoleNames(); // Returns a collection of role names
-
-        // Check if the user has a role containing 'PUSAT'
-        if ($roles->contains(fn($role) => str_contains($role, 'PUSAT'))) {
-            $provinsi = DB::table('area_provinsi')
-            ->where('snapshot_id', $snapshot_id)
-            ->get(); 
-        
-            $kabupaten = DB::table('area_kabupaten_kota')
-                ->whereIn('provinsi_id', $provinsi->pluck('id'))
-                ->get();
-    
+        // progres by user
+        $userDetails = $data->pluck('username')->unique()->toArray();
+        $user_axis = [];
+        $resultUsers = [];
+        foreach($listStatus as $status) {
+            $tempCount = [];
+            $tempUser = [];
+            foreach ($userDetails as $username) {
+                $count = $data->where('status_form', $status)->where('username', $username)->count();
+                $tempCount[] = $count;
+                $tempUser[] = $username;
+            }        
+            $resultUsers[] = [
+                'name' => $status,
+                'data' => $tempCount
+            ];
+            $user_axis = $tempUser;
         }
 
-        // Check if the user has a role containing 'PROVINSI'
-        if ($roles->contains(fn($role) => str_contains($role, 'PROVINSI'))) {
-            // Perform action if role contains 'PROVINSI'
-            $provinsi_work = DB::table('matchapro_users_wilayah_akses')->where('user_id', $user->id)->pluck('provinsi_id')->unique();
-            $kabupaten_kota_work = DB::table('matchapro_users_wilayah_akses')->where('user_id', $user->id)->pluck('kabupaten_kota_id')->unique();
-            $provinsi = DB::table('area_provinsi')->whereIn('id', $provinsi_work)->get();
+        return view('/matchapro/page/progress_profiling_mandiri', [
+            'breadcrumbs' => $breadcrumbs,
+            'pageConfigs' => $pageConfigs,
+            'masterProvinsi' => $mp,
+            'tahun' => $tahun,
+            'status_usaha'=> $statusCounts,
+            'total_target' => $data->reject(function ($item) {
+                return $item->status_form == 'CANCELED';
+            })->count(),
+            'total_approved' => $data->filter(function ($item) {
+                return $item->status_form == 'APPROVED';
+            })->count(),
+            'total_inprogress' => $data->reject(function ($item) {
+                return $item->status_form == 'CANCELED' || $item->status_form == 'APPROVED';
+            })->count(),
+            'kabkot_axis' => $kabupaten_axis,
+            'kabkot_data' => $resultStatus,
+            'user_axis' => $user_axis,
+            'user_data' => $resultUsers,
+            'wilayahAkses' => $wilayahAkses->count(),
+            'levelRole' => $level_role_user
+        ]);
+    }
 
-            $kabupaten = DB::table('area_kabupaten_kota')
-                ->whereIn('id', $kabupaten_kota_work)
-                ->get();
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function wilayah_index()
+    {
+        // $pageConfigs = ['blankPage' => true];
+        // return view('/matchapro/misc/under-maintenance', ['pageConfigs' => $pageConfigs]);        
+
+        $roleUser = auth()->user()->getRoleNames();
+        // belum memiliki roles
+        if(!$roleUser->count()) {
+            $pageConfigs = ['blankPage' => true];
+            return view('/matchapro/misc/not-authorized', ['pageConfigs' => $pageConfigs]);
         }
 
-        // Check if the user has a role containing 'KABKOT'
-        if ($roles->contains(fn($role) => str_contains($role, 'KABKOT'))) {
-            // Perform action if role contains 'KABKOT'
-            $provinsi_work = DB::table('matchapro_users_wilayah_akses')->where('user_id', $user->id)->pluck('provinsi_id')->unique();
-            $kabupaten_kota_work = DB::table('matchapro_users_wilayah_akses')->where('user_id', $user->id)->pluck('kabupaten_kota_id')->unique();
-            $provinsi = DB::table('area_provinsi')->whereIn('id', $provinsi_work)->get();
+        $isAbleToviewPage = auth()->user()->getPermissionsViaRoles()->contains('name', 'view-progress-profiling-nasional') || auth()->user()->getPermissionsViaRoles()->contains('name', 'view-progress-profiling-provinsi') || auth()->user()->getPermissionsViaRoles()->contains('name', 'view-progress-profiling-kabkot');
+        if(!$isAbleToviewPage) {
+            $pageConfigs = ['blankPage' => true];
+            return view('/matchapro/misc/not-authorized', ['pageConfigs' => $pageConfigs]);
+        }
 
-            $kabupaten = DB::table('area_kabupaten_kota')
-                ->whereIn('id', $kabupaten_kota_work)
-                ->get();
 
             
+        $pageConfigs = ['sidebarCollapsed' => false];
+        $breadcrumbs = [
+            ['link' => "home", 'name' => "Home"], ['name' => "Progress Profiling - Periodik"]
+        ];
+
+        // master provinsi user
+        $mp = $this->masterWilayah->getMasterProvinsiUser();                
+        
+        $tahun = DB::table('matchapro_periode_profiling')
+            ->pluck('start_date')
+            ->map(function($date) {
+                return \Carbon\Carbon::parse($date)->year;
+            })
+            ->unique()
+            ->values(); 
+            
+        $role_user = auth()->user()->getRoleNames()[0]; // PUSAT-ADMIN, dst
+        $level_role_user = explode('-' , $role_user)[0]; // PUSAT, dst
+
+        $listProfiling = DB::table('matchapro_periode_profiling')->whereYear('start_date', date('Y'))
+            ->where('id', '!=', env('PERIODE_PROFILING_MANDIRI'))
+            ->pluck('id')->unique()->toArray();  
+
+        $wilayahAkses = DB::table('matchapro_users_wilayah_akses')->where('user_id', auth()->user()->id)->get();        
+        $provinsiAkses = $wilayahAkses->pluck('provinsi_id')->unique()->toArray();
+        $kabupatenAkses= $wilayahAkses->pluck('kabupaten_kota_id')->unique()->toArray();
+
+        $data = DB::table('matchapro_alokasi_profiling as pp')  
+            ->join('area_provinsi as ap', 'ap.id', '=', 'pp.init_provinsi_id')          
+            ->join('area_kabupaten_kota as akk', 'akk.id', '=', 'pp.init_kabupaten_kota_id')
+            ->join('matchapro_users as mm', 'mm.id', '=', 'pp.user_id')
+            ->select('pp.id', 'pp.user_id', 'pp.status_form', 'pp.idsbr', 
+                'pp.perusahaan_id', 'pp.periode_id', 'pp.action_type', DB::raw('concat(ap.kode, \' - \', ap.nama) as nmprov'),
+                DB::raw('concat(akk.kode, \' - \', akk.nama) as nmkab'), 'ap.kode as kdprov', 'akk.kode as kdkab',
+                'mm.username'
+                )
+            ->whereIn('periode_id', $listProfiling)                                    
+            ->when($level_role_user != 'PUSAT', function($query) use ($provinsiAkses) {            
+                $query->whereIn('init_provinsi_id', $provinsiAkses);
+                
+            })
+            ->when($level_role_user != 'PUSAT', function($query) use ($kabupatenAkses) {
+                $query->whereIn('init_kabupaten_kota_id', $kabupatenAkses);
+                
+            })            
+            ->get(); 
+
+        // progres by status
+        $statusCounts = $data->pluck('status_form')->map(function ($status) {
+            if ($status === 'REJECTED') {
+                return 'DRAFT';
+            }
+            return $status;
+        })->countBy();
+        $statusCounts = collect([
+            'OPEN' => $statusCounts->get('OPEN', 0),
+            'DRAFT' => $statusCounts->get('DRAFT', 0) + $statusCounts->get('REJECTED', 0),
+            'SUBMITTED' => $statusCounts->get('SUBMITTED', 0),
+            'APPROVED' => $statusCounts->get('APPROVED', 0),
+        ]);
+
+        // progres by kabupaten/kota        
+        $kabupatenKotaDetails = $data->pluck('nmkab')->unique()->toArray();
+        $kabupaten_axis = [];
+        $listStatus =  ['OPEN', 'DRAFT', 'SUBMITTED', 'APPROVED'];
+        $resultStatus = [];
+        foreach($listStatus as $status) {
+            $tempCount = [];
+            $tempKabupaten = [];
+            foreach ($kabupatenKotaDetails as $nmkab) {
+                $count = $data->where('status_form', $status)->where('nmkab', $nmkab)->count();
+                $tempCount[] = $count;
+                $tempKabupaten[] = $nmkab;
+            }        
+            $resultStatus[] = [
+                'name' => $status,
+                'data' => $tempCount
+            ];
+            $kabupaten_axis = $tempKabupaten;
+        }    
+
+        // progres by user
+        $userDetails = $data->pluck('username')->unique()->toArray();
+        $user_axis = [];
+        $resultUsers = [];
+        foreach($listStatus as $status) {
+            $tempCount = [];
+            $tempUser = [];
+            foreach ($userDetails as $username) {
+                $count = $data->where('status_form', $status)->where('username', $username)->count();
+                $tempCount[] = $count;
+                $tempUser[] = $username;
+            }        
+            $resultUsers[] = [
+                'name' => $status,
+                'data' => $tempCount
+            ];
+            $user_axis = $tempUser;
         }
 
         return view('/matchapro/page/progress_profiling_wilayah', [
             'breadcrumbs' => $breadcrumbs,
             'pageConfigs' => $pageConfigs,
             'masterProvinsi' => $mp,
-            'provinsi' => $provinsi,
-            'kabupaten' => $kabupaten,
-            'tahun' => $tahun
-    ]);
+            'tahun' => $tahun,
+            'status_usaha'=> $statusCounts,
+            'total_target' => $data->reject(function ($item) {
+                return $item->status_form == 'CANCELED';
+            })->count(),
+            'total_approved' => $data->filter(function ($item) {
+                return $item->status_form == 'APPROVED';
+            })->count(),
+            'total_inprogress' => $data->reject(function ($item) {
+                return $item->status_form == 'CANCELED' || $item->status_form == 'APPROVED';
+            })->count(),
+            'kabkot_axis' => $kabupaten_axis,
+            'kabkot_data' => $resultStatus,
+            'user_axis' => $user_axis,
+            'user_data' => $resultUsers,
+            'wilayahAkses' => $wilayahAkses->count(),
+            'levelRole' => $level_role_user
+        ]);
 
     }
 
     public function profiler_index()
     {
-        $pageConfigs = ['sidebarCollapsed' => false];
-        $breadcrumbs = [
-            ['link' => "home", 'name' => "Home"], ['link' => "javascript:void(0)", 'name' => "Layouts"], ['name' => "Collapsed menu"]
-        ];
-        return view('/matchapro/page/progress_profiling_profiler', ['breadcrumbs' => $breadcrumbs, 'pageConfigs' => $pageConfigs]);
+        $roleUser = auth()->user()->getRoleNames();
+        // belum memiliki roles
+        if(!$roleUser->count()) {
+            $pageConfigs = ['blankPage' => true];
+            return view('/matchapro/misc/not-authorized', ['pageConfigs' => $pageConfigs]);
+        }
+
+        return redirect()->route('profiling.index');
+        // $pageConfigs = ['sidebarCollapsed' => false];
+        // $breadcrumbs = [
+        //     ['link' => "home", 'name' => "Home"], ['link' => "javascript:void(0)", 'name' => "Layouts"], ['name' => "Collapsed menu"]
+        // ];
+        // return view('/matchapro/page/progress_profiling_profiler', ['breadcrumbs' => $breadcrumbs, 'pageConfigs' => $pageConfigs]);
 
     }
 
-    public function getStatusStatistics(Request $request){
-        
+    public function getStatusStatistics(){
+
+        $roleUser = auth()->user()->getRoleNames();
+        // belum memiliki roles
+        if(!$roleUser->count()) {
+            $pageConfigs = ['blankPage' => true];
+            return view('/matchapro/misc/not-authorized', ['pageConfigs' => $pageConfigs]);
+        }
         
         // Get the authenticated user
         $user = Auth::user();
 
         // Get all role names for the user
         $roles = $user->getRoleNames(); // Returns a collection of role names
-        
-        $provinsi = $request->input('provinsi');
-        $kabupatenKota = $request->input('kabupaten_kota');
-        $tahunReferensi = $request->input('tahun_referensi');
-        
-        // Check if there are any request attributes (provinsi, kabupaten_kota, tahun_referensi)
-        if ($provinsi != null || $kabupatenKota != null) {
-            // Perform alternative actions if there are request attributes
-            return $this->getStatusStatisticsWithFilters($provinsi, $kabupatenKota, $tahunReferensi);
-        }
 
         // Check if the user has a role containing 'PUSAT'
         if ($roles->contains(fn($role) => str_contains($role, 'PUSAT'))) {
             // Perform action if role contains 'PUSAT'
-            $result = $this->getStatusStatisticsPusat($tahunReferensi);
+            $result = $this->getStatusStatisticsPusat();
         }
 
         // Check if the user has a role containing 'PROVINSI'
         if ($roles->contains(fn($role) => str_contains($role, 'PROVINSI'))) {
             // Perform action if role contains 'PROVINSI'
-            $result = $this->getStatusStatisticsProvinsi($tahunReferensi);
+            $result = $this->getStatusStatisticsProvinsi();
         }
 
         // Check if the user has a role containing 'KABKOT'
         if ($roles->contains(fn($role) => str_contains($role, 'KABKOT'))) {
             // Perform action if role contains 'KABKOT'
-            $result = $this->getStatusStatisticsKabupatenKota($tahunReferensi);
+            $result = $this->getStatusStatisticsKabupatenKota();
         }
         
         return $result;
            
     }
 
-    public function getStatusStatisticsKabupatenKota($tahunReferensi){
+    public function getStatusStatisticsKabupatenKota(){
         //Kabupaten Kota
         $user = Auth::user();
         $user_work = DB::table('matchapro_users_wilayah_akses')->where('user_id', $user->id)->get();
@@ -223,9 +380,6 @@ class ProgressProfilingController extends Controller
             'map2.user_id'
         )
         ->join('matchapro_model_has_roles as mmhr', 'mmhr.model_id', '=', 'unique_muwa.user_id')
-        ->when($tahunReferensi, function ($query, $tahunReferensi) {
-            return $query->whereYear('map2.updated_at', $tahunReferensi);
-        })
         ->whereIn('mmhr.role_id', [11, 12, 13]) //role : KABKOT-VIEWER, KABKOT-PROFILER, KABKOT-PROFILER-VIEWER
         ->groupBy('map2.status_form')
         ->get();
@@ -249,9 +403,6 @@ class ProgressProfilingController extends Controller
             DB::raw("COUNT(CASE WHEN map2.status_form = 'DRAFT' THEN 1 END) AS draft_count"),
             DB::raw("COUNT(CASE WHEN map2.status_form = 'SUBMITTED' THEN 1 END) AS submitted_count")
         )
-        ->when($tahunReferensi, function ($query, $tahunReferensi) {
-            return $query->whereYear('map2.updated_at', $tahunReferensi);
-        })
         ->whereIn('mmhr.role_id', [11, 12, 13]) //role : KABKOT-VIEWER, KABKOT-PROFILER, KABKOT-PROFILER-VIEWER
         ->groupBy('mu.nama')
         ->orderBy('mu.nama')
@@ -287,7 +438,7 @@ class ProgressProfilingController extends Controller
         
     }
 
-    public function getStatusStatisticsPusat($tahunReferensi){
+    public function getStatusStatisticsPusat(){
         $snapshot_id = DB::table('area_provinsi')->max('snapshot_id');
         
         $query = DB::table('matchapro_alokasi_profiling as map');
@@ -418,7 +569,7 @@ class ProgressProfilingController extends Controller
         ]);
     }
 
-    public function getStatusStatisticsProvinsi($tahunReferensi){
+    public function getStatusStatisticsProvinsi(){
         //Provinsi
         $user = Auth::user();
         $user_work = DB::table('matchapro_users_wilayah_akses')->where('user_id', $user->id)->get();
@@ -436,9 +587,6 @@ class ProgressProfilingController extends Controller
             'map2.user_id'
         )
         ->select('map2.status_form', DB::raw('COUNT(*) as total'))
-        ->when($tahunReferensi, function ($query, $tahunReferensi) {
-            return $query->whereYear('map2.updated_at', $tahunReferensi);
-        })
         ->groupBy('map2.status_form')
         ->get();
 
@@ -459,48 +607,8 @@ class ProgressProfilingController extends Controller
 
         //Progress Profiling 
         $kabupatenKotaIds = $kabupaten_kota_work->toArray();
-        
-        //V1
-        // $query = "
-        //     WITH UniqueMap2 AS (
-        //         SELECT 
-        //             map2.id,
-        //             akk.id AS kabupaten_kota_id,
-        //             akk.kode, 
-        //             akk.nama,
-        //             map2.status_form,
-        //             ROW_NUMBER() OVER (PARTITION BY map2.id ORDER BY map2.id) AS row_num
-        //         FROM matchapro_alokasi_profiling map2
-        //         JOIN matchapro_users_wilayah_akses muwa ON muwa.user_id = map2.user_id
-        //         LEFT JOIN area_provinsi ap ON ap.id = muwa.provinsi_id
-        //         LEFT JOIN area_kabupaten_kota akk ON akk.id = muwa.kabupaten_kota_id
-        //         WHERE ap.snapshot_id = 4 
-        //     )
-        //     SELECT 
-        //         akk.id,
-        //         akk.kode, 
-        //         akk.nama,
-        //         COALESCE(SUM(CASE WHEN UniqueMap2.status_form = 'OPEN' THEN 1 ELSE 0 END), 0) AS open_count,
-        //         COALESCE(SUM(CASE WHEN UniqueMap2.status_form = 'DRAFT' THEN 1 ELSE 0 END), 0) AS draft_count,
-        //         COALESCE(SUM(CASE WHEN UniqueMap2.status_form = 'SUBMITTED' THEN 1 ELSE 0 END), 0) AS submitted_count
-        //     FROM ( 
-        //         SELECT DISTINCT id, kode, nama
-        //         FROM area_kabupaten_kota
-        //     ) AS akk
-        //     LEFT JOIN UniqueMap2 ON akk.id = UniqueMap2.kabupaten_kota_id
-        //     AND UniqueMap2.row_num = 1
-        //     WHERE akk.id IN (" . implode(',', array_fill(0, count($kabupatenKotaIds), '?')) . ")
-        //     GROUP BY akk.kode, akk.nama, akk.id
-        //     ORDER BY akk.kode;
-        // ";
 
-        // // Run the full query using DB::select() with bindings
-        // $progressProfilingDataKabupatenKota = DB::select(DB::raw($query), $kabupatenKotaIds);
-
-        //V2
-        
-            // Define the query with conditional logic for $tahunReferensi
-            $query = "
+        $query = "
             WITH UniqueMap2 AS (
                 SELECT 
                     map2.id,
@@ -513,13 +621,8 @@ class ProgressProfilingController extends Controller
                 JOIN matchapro_users_wilayah_akses muwa ON muwa.user_id = map2.user_id
                 LEFT JOIN area_provinsi ap ON ap.id = muwa.provinsi_id
                 LEFT JOIN area_kabupaten_kota akk ON akk.id = muwa.kabupaten_kota_id
-                WHERE ap.snapshot_id = 4 ";
-
-            if ($tahunReferensi !== null) {
-            $query .= " AND YEAR(map2.updated_at) = ? ";
-            }
-
-            $query .= ")
+                WHERE ap.snapshot_id = 4 
+            )
             SELECT 
                 akk.id,
                 akk.kode, 
@@ -536,17 +639,10 @@ class ProgressProfilingController extends Controller
             WHERE akk.id IN (" . implode(',', array_fill(0, count($kabupatenKotaIds), '?')) . ")
             GROUP BY akk.kode, akk.nama, akk.id
             ORDER BY akk.kode;
-            ";
+        ";
 
-            // Prepare parameters for the query
-            $params = $kabupatenKotaIds;
-            if ($tahunReferensi !== null) {
-            array_unshift($params, $tahunReferensi); // Add $tahunReferensi to the beginning of $params
-            }
-
-            // Execute the query using DB::select
-            $progressProfilingDataKabupatenKota = DB::select(DB::raw($query), $params);
-
+        // Run the full query using DB::select() with bindings
+        $progressProfilingDataKabupatenKota = DB::select(DB::raw($query), $kabupatenKotaIds);
         
         $dataKabupatenKotaOpen = array_map('intval', array_column($progressProfilingDataKabupatenKota, 'open_count'));
         $dataKabupatenKotaDraft = array_map('intval', array_column($progressProfilingDataKabupatenKota, 'draft_count'));
@@ -575,264 +671,6 @@ class ProgressProfilingController extends Controller
             'label' => $label,
             'series' => $series
         ]);
-    }
-
-    public function getStatusStatisticsWithFilters($provinsi, $kabupatenKota, $tahunReferensi){
-
-        
-        //Provinsi
-        if ($provinsi != null && $kabupatenKota == null) {
-            $user = Auth::user();
-            $user_work = DB::table('matchapro_users_wilayah_akses')->where('user_id', $user->id)
-            ->where('provinsi_id', $provinsi) //tambahan untuk filter
-            ->get();
-            
-            $kabupaten_kota_work = $user_work->pluck('kabupaten_kota_id');
-            $countGroupProvinsi = DB::table('matchapro_alokasi_profiling as map2')
-            ->joinSub(
-                DB::table('matchapro_users_wilayah_akses')
-                    ->select('user_id')
-                    ->whereIn('kabupaten_kota_id', $kabupaten_kota_work)
-                    ->distinct(),
-                'unique_muwa',
-                'unique_muwa.user_id',
-                '=',
-                'map2.user_id'
-            )
-            ->select('map2.status_form', DB::raw('COUNT(*) as total'))
-            ->when($tahunReferensi, function ($query, $tahunReferensi) {
-                return $query->whereYear('map2.updated_at', $tahunReferensi);
-            })
-            ->where('init_provinsi_id', $provinsi) //tambahan untuk filter
-            ->groupBy('map2.status_form')
-            ->get();
-
-            
-
-            //User Prov
-            $KabupatenKotaInProv = DB::table('area_kabupaten_kota as akk')
-            ->select('akk.id as kabupaten_kota_id', 'akk.kode as kabupaten_kota_kode', 'akk.nama as kabupaten_kota_nama')
-            ->whereIn('akk.id', $kabupaten_kota_work)
-            ->orderBy('akk.kode')
-            ->get(); 
-            
-            $kabupatenKotaConcatenatedArray = $KabupatenKotaInProv->pluck('kabupaten_kota_kode', 'kabupaten_kota_nama')
-            ->map(function ($kode, $nama) {
-                return $kode . ' ' . $nama;
-            })
-            ->values()
-            ->toArray();
-            $label = $kabupatenKotaConcatenatedArray;
-
-            //Progress Profiling 
-            $kabupatenKotaIds = $kabupaten_kota_work->toArray();
-
-            //V1
-            // $query = "
-            //     WITH UniqueMap2 AS (
-            //         SELECT 
-            //             map2.id,
-            //             akk.id AS kabupaten_kota_id,
-            //             akk.kode, 
-            //             akk.nama,
-            //             map2.status_form,
-            //             ROW_NUMBER() OVER (PARTITION BY map2.id ORDER BY map2.id) AS row_num
-            //         FROM matchapro_alokasi_profiling map2
-            //         JOIN matchapro_users_wilayah_akses muwa ON muwa.user_id = map2.user_id
-            //         LEFT JOIN area_provinsi ap ON ap.id = muwa.provinsi_id
-            //         LEFT JOIN area_kabupaten_kota akk ON akk.id = muwa.kabupaten_kota_id
-            //         WHERE ap.snapshot_id = 4 
-            //     )
-            //     SELECT 
-            //         akk.id,
-            //         akk.kode, 
-            //         akk.nama,
-            //         COALESCE(SUM(CASE WHEN UniqueMap2.status_form = 'OPEN' THEN 1 ELSE 0 END), 0) AS open_count,
-            //         COALESCE(SUM(CASE WHEN UniqueMap2.status_form = 'DRAFT' THEN 1 ELSE 0 END), 0) AS draft_count,
-            //         COALESCE(SUM(CASE WHEN UniqueMap2.status_form = 'SUBMITTED' THEN 1 ELSE 0 END), 0) AS submitted_count
-            //     FROM ( 
-            //         SELECT DISTINCT id, kode, nama
-            //         FROM area_kabupaten_kota
-            //     ) AS akk
-            //     LEFT JOIN UniqueMap2 ON akk.id = UniqueMap2.kabupaten_kota_id
-            //     AND UniqueMap2.row_num = 1
-            //     WHERE akk.id IN (" . implode(',', array_fill(0, count($kabupatenKotaIds), '?')) . ")
-            //     GROUP BY akk.kode, akk.nama, akk.id
-            //     ORDER BY akk.kode;
-            // ";
-            // Run the full query using DB::select() with bindings
-            //$progressProfilingDataKabupatenKota = DB::select(DB::raw($query), $kabupatenKotaIds);
-
-            //V2
-            // Define the query with conditional logic for $tahunReferensi
-            $query = "
-            WITH UniqueMap2 AS (
-                SELECT 
-                    map2.id,
-                    akk.id AS kabupaten_kota_id,
-                    akk.kode, 
-                    akk.nama,
-                    map2.status_form,
-                    ROW_NUMBER() OVER (PARTITION BY map2.id ORDER BY map2.id) AS row_num
-                FROM matchapro_alokasi_profiling map2
-                JOIN matchapro_users_wilayah_akses muwa ON muwa.user_id = map2.user_id
-                LEFT JOIN area_provinsi ap ON ap.id = muwa.provinsi_id
-                LEFT JOIN area_kabupaten_kota akk ON akk.id = muwa.kabupaten_kota_id
-                WHERE ap.snapshot_id = 4 ";
-
-            if ($tahunReferensi !== null) {
-            $query .= " AND YEAR(map2.updated_at) = ? ";
-            }
-
-            $query .= ")
-            SELECT 
-                akk.id,
-                akk.kode, 
-                akk.nama,
-                COALESCE(SUM(CASE WHEN UniqueMap2.status_form = 'OPEN' THEN 1 ELSE 0 END), 0) AS open_count,
-                COALESCE(SUM(CASE WHEN UniqueMap2.status_form = 'DRAFT' THEN 1 ELSE 0 END), 0) AS draft_count,
-                COALESCE(SUM(CASE WHEN UniqueMap2.status_form = 'SUBMITTED' THEN 1 ELSE 0 END), 0) AS submitted_count
-            FROM ( 
-                SELECT DISTINCT id, kode, nama
-                FROM area_kabupaten_kota
-            ) AS akk
-            LEFT JOIN UniqueMap2 ON akk.id = UniqueMap2.kabupaten_kota_id
-            AND UniqueMap2.row_num = 1
-            WHERE akk.id IN (" . implode(',', array_fill(0, count($kabupatenKotaIds), '?')) . ")
-            GROUP BY akk.kode, akk.nama, akk.id
-            ORDER BY akk.kode;
-            ";
-
-            // Prepare parameters for the query
-            $params = $kabupatenKotaIds;
-            if ($tahunReferensi !== null) {
-            array_unshift($params, $tahunReferensi); // Add $tahunReferensi to the beginning of $params
-            }
-
-            // Execute the query using DB::select
-            $progressProfilingDataKabupatenKota = DB::select(DB::raw($query), $params);
-            
-            $dataKabupatenKotaOpen = array_map('intval', array_column($progressProfilingDataKabupatenKota, 'open_count'));
-            $dataKabupatenKotaDraft = array_map('intval', array_column($progressProfilingDataKabupatenKota, 'draft_count'));
-            $dataKabupatenKotaSubmitted = array_map('intval', array_column($progressProfilingDataKabupatenKota, 'submitted_count'));
-            
-
-            $series = [
-                [
-                    'name' => 'OPEN',
-                    'data' => $dataKabupatenKotaOpen
-                ],
-                [
-                    'name' => 'DRAFT',
-                    'data' => $dataKabupatenKotaDraft
-                ],
-                [
-                    'name' => 'SUBMITTED',
-                    'data' => $dataKabupatenKotaSubmitted
-                ],
-            ];
-
-
-
-            return response()->json([
-                'countGroup' => $countGroupProvinsi,            
-                'label' => $label,
-                'series' => $series
-            ]);
-        }
-
-        //Kabupaten Kota
-        if ($provinsi != null && $kabupatenKota != null) {
-            
-            $kabupaten_kota_work = [$kabupatenKota];
-            
-            // $user = Auth::user();
-            // $user_work = DB::table('matchapro_users_wilayah_akses')->where('user_id', $user->id)->get();
-        
-            // $kabupaten_kota_work = $user_work->pluck('kabupaten_kota_id');
-            
-
-            $countGroupKabupatenKota = DB::table('matchapro_alokasi_profiling as map2')
-            ->select('map2.status_form', DB::raw('COUNT(*) as total'))
-            ->joinSub(
-                DB::table('matchapro_users_wilayah_akses')
-                    ->distinct()
-                    ->select('user_id')
-                    ->whereIn('kabupaten_kota_id', $kabupaten_kota_work),
-                'unique_muwa',
-                'unique_muwa.user_id',
-                '=',
-                'map2.user_id'
-            )
-            ->join('matchapro_model_has_roles as mmhr', 'mmhr.model_id', '=', 'unique_muwa.user_id')
-            ->whereIn('mmhr.role_id', [11, 12, 13]) //role : KABKOT-VIEWER, KABKOT-PROFILER, KABKOT-PROFILER-VIEWER
-            ->when($tahunReferensi, function ($query, $tahunReferensi) {
-                return $query->whereYear('map2.updated_at', $tahunReferensi);
-            })
-            ->whereIn('init_kabupaten_kota_id', $kabupaten_kota_work) //tambahan untuk filter
-            ->groupBy('map2.status_form')
-            ->get();
-
-            
-
-            $progressUserKabupatenKota = DB::table('matchapro_alokasi_profiling as map2')
-            ->joinSub(
-                DB::table('matchapro_users_wilayah_akses')
-                    ->select('user_id')
-                    ->whereIn('kabupaten_kota_id', $kabupaten_kota_work)
-                    ->distinct(),
-                'unique_muwa',
-                'unique_muwa.user_id',
-                '=',
-                'map2.user_id'
-            )
-            ->join('matchapro_model_has_roles as mmhr', 'mmhr.model_id', '=', 'unique_muwa.user_id')
-            ->join('matchapro_users as mu', 'mu.id', '=', 'unique_muwa.user_id')
-            ->select(
-                'mu.nama',
-                DB::raw("COUNT(CASE WHEN map2.status_form = 'OPEN' THEN 1 END) AS open_count"),
-                DB::raw("COUNT(CASE WHEN map2.status_form = 'DRAFT' THEN 1 END) AS draft_count"),
-                DB::raw("COUNT(CASE WHEN map2.status_form = 'SUBMITTED' THEN 1 END) AS submitted_count")
-            )
-            ->whereIn('mmhr.role_id', [11, 12, 13]) //role : KABKOT-VIEWER, KABKOT-PROFILER, KABKOT-PROFILER-VIEWER
-            ->when($tahunReferensi, function ($query, $tahunReferensi) {
-                return $query->whereYear('map2.updated_at', $tahunReferensi);
-            })
-            ->whereIn('init_kabupaten_kota_id', $kabupaten_kota_work)
-            ->groupBy('mu.nama')
-            ->orderBy('mu.nama')
-            ->get();
-            
-            
-    
-            $label = $progressUserKabupatenKota->pluck('nama');
-            
-            $dataUserKabupatenKotaOpen = array_map('intval', $progressUserKabupatenKota->pluck('open_count')->toArray());
-            $dataUserKabupatenKotaDraft = array_map('intval', $progressUserKabupatenKota->pluck('draft_count')->toArray());
-            $dataUserKabupatenKotaSubmitted = array_map('intval', $progressUserKabupatenKota->pluck('submitted_count')->toArray());
-            
-            $series = [
-                [
-                    'name' => 'OPEN',
-                    'data' => $dataUserKabupatenKotaOpen
-                ],
-                [
-                    'name' => 'DRAFT',
-                    'data' => $dataUserKabupatenKotaDraft
-                ],
-                [
-                    'name' => 'SUBMITTED',
-                    'data' => $dataUserKabupatenKotaSubmitted
-                ],
-            ];
-            
-            return response()->json([
-                'countGroup' => $countGroupKabupatenKota,            
-                'label' => $label ?? [],
-                'series' => $series ?? []
-            ]);
-        }
-
     }
 
     public function countProgressProfilingProvinsi($progressProfilingData, $snapshot_id){
@@ -886,6 +724,263 @@ class ProgressProfilingController extends Controller
         return $allStatusData;
     }
 
+    public function getDataProgres(Request $request) {
+
+        $role_user = auth()->user()->getRoleNames()[0]; // PUSAT-ADMIN, dst
+        $level_role_user = explode('-' , $role_user)[0]; // PUSAT, dst
+
+        $provinsi = $request->provinsi;
+        $kabupaten = $request->kabupaten;
+        $tahun = $request->tahun_profiling;        
+
+        // get list profiling periodeik selected tahun
+        $listProfiling = DB::table('matchapro_periode_profiling')->whereYear('start_date', $tahun)
+        ->where('id', '!=', env('PERIODE_PROFILING_MANDIRI'))
+        ->pluck('id')->unique()->toArray();    
+
+        // get wilaya akses user
+        $wilayahAkses = DB::table('matchapro_users_wilayah_akses')->where('user_id', auth()->user()->id)->get();        
+        $provinsiAkses = $wilayahAkses->pluck('provinsi_id')->unique()->toArray();
+        $kabupatenAkses= $wilayahAkses->pluck('kabupaten_kota_id')->unique()->toArray();
+
+        if($provinsi) {
+            if (!in_array($provinsi, $provinsiAkses)) {                
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized access to province data'
+                ], 403);
+            }
+            $provinsiAkses = [$provinsi];
+        }
+
+        if($kabupaten) {
+            if (!in_array($kabupaten, $kabupatenAkses)) {                
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized access to kabupaten data'
+                ], 403);
+            }
+            $kabupatenAkses = [$kabupaten];
+        }    
+
+        $data = DB::table('matchapro_alokasi_profiling as pp')  
+            ->join('area_provinsi as ap', 'ap.id', '=', 'pp.init_provinsi_id')          
+            ->join('area_kabupaten_kota as akk', 'akk.id', '=', 'pp.init_kabupaten_kota_id')
+            ->join('matchapro_users as mm', 'mm.id', '=', 'pp.user_id')
+            ->select('pp.id', 'pp.user_id', 'pp.status_form', 'pp.idsbr', 
+                'pp.perusahaan_id', 'pp.periode_id', 'pp.action_type', DB::raw('concat(ap.kode, \' - \', ap.nama) as nmprov'),
+                DB::raw('concat(akk.kode, \' - \', akk.nama) as nmkab'), 'ap.kode as kdprov', 'akk.kode as kdkab',
+                'mm.username'
+                )
+            ->whereIn('periode_id', $listProfiling)                                    
+            ->when($level_role_user != 'PUSAT', function($query) use ($provinsiAkses) {            
+                $query->whereIn('init_provinsi_id', $provinsiAkses);
+                
+            })
+            ->when($level_role_user != 'PUSAT', function($query) use ($kabupatenAkses) {
+                $query->whereIn('init_kabupaten_kota_id', $kabupatenAkses);
+                
+            })            
+            ->get();        
+
+        // progres by status
+        $statusCounts = $data->pluck('status_form')->map(function ($status) {
+            if ($status === 'REJECTED') {
+                return 'DRAFT';
+            }
+            return $status;
+        })->countBy();
+        $statusCounts = collect([
+            'OPEN' => $statusCounts->get('OPEN', 0),
+            'DRAFT' => $statusCounts->get('DRAFT', 0) + $statusCounts->get('REJECTED', 0),
+            'SUBMITTED' => $statusCounts->get('SUBMITTED', 0),
+            'APPROVED' => $statusCounts->get('APPROVED', 0),
+        ]);
+
+        // progres by kabupaten/kota        
+        $kabupatenKotaDetails = $data->pluck('nmkab')->unique()->toArray();
+        $kabupaten_axis = [];
+        $listStatus =  ['OPEN', 'DRAFT', 'SUBMITTED', 'APPROVED'];
+        $resultStatus = [];
+        foreach($listStatus as $status) {
+            $tempCount = [];
+            $tempKabupaten = [];
+            foreach ($kabupatenKotaDetails as $nmkab) {
+                $count = $data->where('status_form', $status)->where('nmkab', $nmkab)->count();
+                $tempCount[] = $count;
+                $tempKabupaten[] = $nmkab;
+            }        
+            $resultStatus[] = [
+                'name' => $status,
+                'data' => $tempCount
+            ];
+            $kabupaten_axis = $tempKabupaten;
+        }    
+
+        // progres by user
+        $userDetails = $data->pluck('username')->unique()->toArray();
+        $user_axis = [];
+        $resultUsers = [];
+        foreach($listStatus as $status) {
+            $tempCount = [];
+            $tempUser = [];
+            foreach ($userDetails as $username) {
+                $count = $data->where('status_form', $status)->where('username', $username)->count();
+                $tempCount[] = $count;
+                $tempUser[] = $username;
+            }        
+            $resultUsers[] = [
+                'name' => $status,
+                'data' => $tempCount
+            ];
+            $user_axis = $tempUser;
+        }        
+
+        return response()->json([
+            'status_usaha'=> $statusCounts,  
+            'total_target' => $data->reject(function ($item) {
+                return $item->status_form == 'CANCELED';
+            })->count(),
+            'total_approved' => $data->filter(function ($item) {
+                return $item->status_form == 'APPROVED';
+            })->count(),
+            'total_inprogress' => $data->reject(function ($item) {
+                return $item->status_form == 'CANCELED' || $item->status_form == 'APPROVED';
+            })->count(),
+            'kabkot_axis' => $kabupaten_axis,
+            'kabkot_data' => $resultStatus,
+            'user_axis' => $user_axis,
+            'user_data' => $resultUsers
+        ], 200);            
+    }
+
+    public function getDataMandiri(Request $request) {
+        $role_user = auth()->user()->getRoleNames()[0]; // PUSAT-ADMIN, dst
+        $level_role_user = explode('-' , $role_user)[0]; // PUSAT, dst
+
+        $provinsi = $request->provinsi;
+        $kabupaten = $request->kabupaten;              
+
+        // get list profiling mandiri selected tahun
+        $listProfiling = DB::table('matchapro_periode_profiling')
+        ->where('id', '=', env('PERIODE_PROFILING_MANDIRI'))
+        ->pluck('id')->unique()->toArray();    
+
+        // get wilaya akses user
+        $wilayahAkses = DB::table('matchapro_users_wilayah_akses')->where('user_id', auth()->user()->id)->get();        
+        $provinsiAkses = $wilayahAkses->pluck('provinsi_id')->unique()->toArray();
+        $kabupatenAkses= $wilayahAkses->pluck('kabupaten_kota_id')->unique()->toArray();
+
+        if($provinsi) {
+            if (!in_array($provinsi, $provinsiAkses)) {                
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized access to province data'
+                ], 403);
+            }
+            $provinsiAkses = [$provinsi];
+        }
+
+        if($kabupaten) {
+            if (!in_array($kabupaten, $kabupatenAkses)) {                
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized access to kabupaten data'
+                ], 403);
+            }
+            $kabupatenAkses = [$kabupaten];
+        }    
+
+        $data = DB::table('matchapro_alokasi_profiling as pp')  
+            ->join('area_provinsi as ap', 'ap.id', '=', 'pp.init_provinsi_id')          
+            ->join('area_kabupaten_kota as akk', 'akk.id', '=', 'pp.init_kabupaten_kota_id')
+            ->join('matchapro_users as mm', 'mm.id', '=', 'pp.user_id')
+            ->select('pp.id', 'pp.user_id', 'pp.status_form', 'pp.idsbr', 
+                'pp.perusahaan_id', 'pp.periode_id', 'pp.action_type', DB::raw('concat(ap.kode, \' - \', ap.nama) as nmprov'),
+                DB::raw('concat(akk.kode, \' - \', akk.nama) as nmkab'), 'ap.kode as kdprov', 'akk.kode as kdkab',
+                'mm.username'
+                )
+            ->whereIn('periode_id', $listProfiling)                                    
+            ->when($level_role_user != 'PUSAT', function($query) use ($provinsiAkses) {            
+                $query->whereIn('init_provinsi_id', $provinsiAkses);
+                
+            })
+            ->when($level_role_user != 'PUSAT', function($query) use ($kabupatenAkses) {
+                $query->whereIn('init_kabupaten_kota_id', $kabupatenAkses);
+                
+            })            
+            ->get();        
+
+        // progres by status
+        $statusCounts = $data->pluck('status_form')->map(function ($status) {
+            if ($status === 'REJECTED') {
+                return 'DRAFT';
+            }
+            return $status;
+        })->countBy();
+        $statusCounts = collect([
+            'OPEN' => $statusCounts->get('OPEN', 0),
+            'DRAFT' => $statusCounts->get('DRAFT', 0) + $statusCounts->get('REJECTED', 0),
+            'SUBMITTED' => $statusCounts->get('SUBMITTED', 0),
+            'APPROVED' => $statusCounts->get('APPROVED', 0),
+        ]);
+
+        // progres by kabupaten/kota        
+        $kabupatenKotaDetails = $data->pluck('nmkab')->unique()->toArray();
+        $kabupaten_axis = [];
+        $listStatus =  ['OPEN', 'DRAFT', 'SUBMITTED', 'APPROVED'];
+        $resultStatus = [];
+        foreach($listStatus as $status) {
+            $tempCount = [];
+            $tempKabupaten = [];
+            foreach ($kabupatenKotaDetails as $nmkab) {
+                $count = $data->where('status_form', $status)->where('nmkab', $nmkab)->count();
+                $tempCount[] = $count;
+                $tempKabupaten[] = $nmkab;
+            }        
+            $resultStatus[] = [
+                'name' => $status,
+                'data' => $tempCount
+            ];
+            $kabupaten_axis = $tempKabupaten;
+        }    
+
+        // progres by user
+        $userDetails = $data->pluck('username')->unique()->toArray();
+        $user_axis = [];
+        $resultUsers = [];
+        foreach($listStatus as $status) {
+            $tempCount = [];
+            $tempUser = [];
+            foreach ($userDetails as $username) {
+                $count = $data->where('status_form', $status)->where('username', $username)->count();
+                $tempCount[] = $count;
+                $tempUser[] = $username;
+            }        
+            $resultUsers[] = [
+                'name' => $status,
+                'data' => $tempCount
+            ];
+            $user_axis = $tempUser;
+        }        
+
+        return response()->json([
+            'status_usaha'=> $statusCounts,  
+            'total_target' => $data->reject(function ($item) {
+                return $item->status_form == 'CANCELED';
+            })->count(),
+            'total_approved' => $data->filter(function ($item) {
+                return $item->status_form == 'APPROVED';
+            })->count(),
+            'total_inprogress' => $data->reject(function ($item) {
+                return $item->status_form == 'CANCELED' || $item->status_form == 'APPROVED';
+            })->count(),
+            'kabkot_axis' => $kabupaten_axis,
+            'kabkot_data' => $resultStatus,
+            'user_axis' => $user_axis,
+            'user_data' => $resultUsers
+        ], 200);  
+    }
     /**
      * Show the form for creating a new resource.
      *

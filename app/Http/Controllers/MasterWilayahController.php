@@ -12,21 +12,45 @@ class MasterWilayahController extends Controller
         return $latestSnapshot->snapshot_id;
     }
 
-    public function getMasterProvinsi() {        
+    public function getMasterProvinsi() {  
+        $roleUser = auth()->user()->getRoleNames();
+        // belum memiliki roles
+        if(!$roleUser->count()) {
+            $pageConfigs = ['blankPage' => true];
+            return view('/matchapro/misc/not-authorized', ['pageConfigs' => $pageConfigs]);
+        }
+              
         $snapshot_id = $this->getLatestSnapshot();        
         $masterProvinsi = DB::table('area_provinsi')->where('snapshot_id', $snapshot_id)                
                 ->get();
         return $masterProvinsi;
     }
+    
+
+    public function getMasterProvinsiUser() {
+        $role_user = auth()->user()->getRoleNames()[0]; // PUSAT-ADMIN, dst
+        $level_role_user = explode('-' , $role_user)[0]; // PUSAT, dst
+        $wilayahAkses = DB::table('matchapro_users_wilayah_akses')->where('user_id', auth()->user()->id)->get();
+
+        $master = $this->getMasterProvinsi();
+        return $master->filter(function($value) use ($level_role_user, $wilayahAkses) {
+            if($level_role_user != 'PUSAT') return $wilayahAkses->contains('provinsi_id', $value->id);
+            return true;
+        })->values();        
+    }
 
     public function getMasterKabkot($provinsi_data) {        
-        $level_role_user = explode('-', auth()->user()->getRoleNames()[0])[0]; // PUSAT, PROVINSI, KABKOT         
+        // $level_role_user = explode('-', auth()->user()->getRoleNames()[0])[0]; // PUSAT, PROVINSI, KABKOT         
+        // $masterKabKot = DB::table('area_kabupaten_kota')
+        //     ->where('provinsi_id', $provinsi_data)                        
+        //     ->when($level_role_user == 'KABKOT', function($query) {
+        //         return $query->where('id', auth()->user()->kabupaten_kota_id);
+        //     })
+        //     ->get();
+
         $masterKabKot = DB::table('area_kabupaten_kota')
-            ->where('provinsi_id', $provinsi_data)                        
-            ->when($level_role_user == 'KABKOT', function($query) {
-                return $query->where('id', auth()->user()->kabupaten_kota_id);
-            })
-            ->get();
+        ->where('provinsi_id', $provinsi_data)  
+        ->get();
             
         return $masterKabKot;
     }
@@ -63,14 +87,35 @@ class MasterWilayahController extends Controller
         $masterKabKot = DB::table('area_kabupaten_kota')->where('provinsi_id', $provinsi_id)->get();
 
         if($masterKabKot->count() && $level_request != 'all') {            
-            $level_role_user = explode('-', auth()->user()->getRoleNames()[0])[0]; // PUSAT, PROVINSI, KABKOT 
-            $masterKabKot = $masterKabKot->filter(function($value) use ($level_role_user) {
-                if($level_role_user == 'PROVINSI') return $value->provinsi_id == auth()->user()->provinsi_id;
-                if($level_role_user == 'KABKOT') return $value->provinsi_id == auth()->user()->provinsi_id && $value->id == auth()->user()->kabupaten_kota_id;
-                return true;
-            })->values()->all();
-        }        
+            // $level_role_user = explode('-', auth()->user()->getRoleNames()[0])[0]; // PUSAT, PROVINSI, KABKOT 
+            // $masterKabKot = $masterKabKot->filter(function($value) use ($level_role_user) {
+            //     if($level_role_user == 'PROVINSI') return $value->provinsi_id == auth()->user()->provinsi_id;
+            //     if($level_role_user == 'KABKOT') return $value->provinsi_id == auth()->user()->provinsi_id && $value->id == auth()->user()->kabupaten_kota_id;
+            //     return true;
+            // })->values()->all();
+        }             
 
         return $masterKabKot;
-    }   
+    } 
+    
+    public function getKabupatenByProvinsi($provinsi_id) {
+        $masterKabKot = DB::table('area_kabupaten_kota')->where('provinsi_id', $provinsi_id)->get();
+        return $masterKabKot;
+    }
+
+    
+    public function getMasterKabkotUser(Request $request) {
+        $role_user = auth()->user()->getRoleNames()[0]; // PUSAT-ADMIN, dst
+        $level_role_user = explode('-' , $role_user)[0]; // PUSAT, dst        
+        $wilayahAkses = DB::table('matchapro_users_wilayah_akses')->where('user_id', auth()->user()->id)->get();
+
+
+        $master = $this->getMasterKabkot($request->provinsi);
+        return $master->filter(function($value) use ($level_role_user, $wilayahAkses) {
+            if($level_role_user !== 'PUSAT') return $wilayahAkses->contains('kabupaten_kota_id', $value->id);
+            return true;
+        })->values();
+    }
+
+
 }

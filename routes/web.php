@@ -13,7 +13,9 @@ use App\Http\Controllers\FormUpdateUsahaController;
 use App\Http\Controllers\ProfilingMandiriController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MasterWilayahController;
-use App\Http\Controllers\MasterKBLi;
+use App\Http\Controllers\MasterKBLI;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\MiscController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -29,11 +31,11 @@ use App\Http\Controllers\MasterKBLi;
 
 Route::get('login', [AuthController::class, 'index'])->name('login');
 Route::post('login', [AuthController::class, 'login'])->name('login.post');
-
+Route::get('error/not-authorized', [MiscController::class, 'notAuthorizedPage'])->name('not-authorized.index');
 
 Route::middleware(['sso-bps'])->group(function () {
-    Route::get('/', [HomeController::class, 'index'])->name('home');
-    Route::get('home', [HomeController::class, 'index'])->name('home2');
+    Route::get('/', [HomeController::class, 'index']);
+    Route::get('home', [HomeController::class, 'index'])->name('home');
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
     //Dashboard
@@ -41,16 +43,20 @@ Route::middleware(['sso-bps'])->group(function () {
 
     //Progress Profiling
     //Wilayah
-    Route::get('profiling/progress/wilayah', [ProgressProfilingController::class, 'wilayah_index'])->name('progress_wilayah.index');
+    Route::get('profiling/progress/periodik', [ProgressProfilingController::class, 'wilayah_index'])->name('progress_wilayah.index');
     Route::get('profiling/progress/status_statistics', [ProgressProfilingController::class, 'getStatusStatistics'])->name('progress_wilayah.status_statistics');
+    Route::get('profiling/progress/mandiri', [ProgressProfilingController::class, 'mandiri_index'])->name('progress_mandiri.index');
+    Route::post('profiling/progress/mandiri/data', [ProgressProfilingController::class, 'getDataMandiri'])->name('progress_mandiri_data');
+
     //Profiler
     Route::get('profiling/progress/profiler', [ProgressProfilingController::class, 'profiler_index'])->name('progress_profiler.index');
+    Route::post('profiling/progress/wilayah/data', [ProgressProfilingController::class, 'getDataProgres'])->name('progres_wilayah_data');
 
     //Direktori Usaha
     Route::get('direktori-usaha', [DirektoriUsahaController::class, 'index'])->name('direktori_usaha.index');
-    Route::get('direktori-usaha/data', [DirektoriUsahaController::class, 'getDirektoriUsahaData'])->name('direktori_usaha.data');
+    Route::post('direktori-usaha/data', [DirektoriUsahaController::class, 'getDirektoriUsahaData'])->name('direktori_usaha.data');
     Route::post('direktori-usaha/data-by-id', [DirektoriUsahaController::class, 'getDirektoriUsahaDataById'])->name('direktori_usaha.data_by_id');
-    Route::get('direktori-usaha/export', [DirektoriUsahaController::class, 'exportExcelPeriodik'])->name('export.excel');
+    Route::get('direktori-usaha/export', [DirektoriUsahaController::class, 'exportExcel'])->name('export.excel');
 
     //Profiling
     Route::get('profiling', [ProfilingController::class, 'index'])->name('profiling.index');
@@ -88,8 +94,21 @@ Route::middleware(['sso-bps'])->group(function () {
     Route::post('wil-desa', [MasterWilayahController::class, 'getDesa'])->name('wil-desa');
     Route::post('wil-kecamatan', [MasterWilayahController::class, 'getKecamatan'])->name('wil-kecamatan');
     Route::post('wil-kabupaten-kota', [MasterWilayahController::class, 'getKabupaten'])->name('wil-kabupaten-kota');
+    Route::post('wil-kabupaten-kota-user', [MasterWilayahController::class, 'getMasterKabkotUser'])->name('wil-kabupaten-kota-user');
     Route::post('master-kbli', [MasterKBLI::class, 'getMasterKBLI'])->name('master-kbli');
     Route::post('check-idsbr', [FormUpdateUsahaController::class, 'checkIDSBR'])->name('check-idsbr');
+    Route::post('wil-provinsi-user', [MasterWilayahController::class, 'getMasterProvinsiUser'])->name('wil-provinsi-user');
+
+    Route::get('user/list', [UserController::class, 'index'])->name('user.list');
+    Route::get('user/data', [UserController::class, 'getData'])->name('user.list.data');
+    Route::post('user/detail', [UserController::class, 'getDetailUser'])->name('user.list.detail');
+    Route::post('user/update', [UserController::class, 'updateUser'])->name('user.list.update');
+    Route::post('user/update-wilayah', [UserController::class, 'updateUserWilayah'])->name('user.list.update.wilayah');
+    Route::post('user/wilayah-akses', [UserController::class, 'getWilayahAksesUser'])->name('user.wilayah.akses');
+    Route::post('user/delete', [UserController::class, 'deleteUser'])->name('user.delete');
+    Route::post('user/add', [UserController::class, 'addUser'])->name('user.add');
+
+    Route::get('faq', [UserController::class, 'faqPage'])->name('faq.index');
 });
 
 //End Matcha Pro

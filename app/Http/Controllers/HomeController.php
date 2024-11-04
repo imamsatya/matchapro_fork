@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Auth;
+use DB;
 
 class HomeController extends Controller
 {
@@ -13,14 +14,20 @@ class HomeController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function index()
-    {        
-        
+    {  
+        $wilayahAkses = DB::table('matchapro_users_wilayah_akses')->where('user_id', auth()->user()->id)->get();        
         $pageConfigs = ['sidebarCollapsed' => false];
         // $breadcrumbs = [
         //     ['link' => "home", 'name' => "Home"], ['link' => "javascript:void(0)", 'name' => "Layouts"], ['name' => "Collapsed menu"]
         // ];
+
+        $role_user = auth()->user()->getRoleNames()[0]; // PUSAT-ADMIN, dst
+        $level_role_user = explode('-' , $role_user)[0]; // PUSAT, dst
+
         return view('/matchapro/page/home', [
             // 'breadcrumbs' => $breadcrumbs, 
+            'levelRole' => $level_role_user,
+            'wilayahAkses' => $wilayahAkses->count(),
             'pageConfigs' => $pageConfigs]);
 
     }

@@ -28,8 +28,7 @@
         <div class="bs-stepper horizontal-wizard-create">
             <div class="bs-stepper-header" role="tablist">
                 <div class="step" data-target="#identitas-usaha" role="tab" id="identitas-usaha-trigger">
-                    <button type="button" class="step-trigger">
-                        {{-- <span class="bs-stepper-box">1</span> --}}
+                    <button type="button" class="step-trigger">                        
                         <span class="bs-stepper-box">
                             <i data-feather="file-text" class="font-medium-3"></i>
                         </span>
@@ -43,8 +42,7 @@
                     <i data-feather="chevron-right" class="font-medium-2"></i>
                 </div>
                 <div class="step" data-target="#cek-usaha" role="tab" id="cek-usaha-trigger">
-                    <button type="button" class="step-trigger">
-                        {{-- <span class="bs-stepper-box">2</span> --}}
+                    <button type="button" class="step-trigger">                        
                         <span class="bs-stepper-box">
                             <i data-feather="database" class="font-medium-3"></i>
                         </span>
@@ -69,71 +67,51 @@
                         <div class="row">
                             <div class="col-lg-6 col-md-6">
                                 <div class="mb-2 col-md-12">
-                                    <label class="form-label" for="nama_usaha">Nama Usaha</label>
+                                    <label class="form-label" for="nama_usaha">Nama Usaha <span
+                                    class="text-danger">*</span></label>
                                     <input type="text" name="nama_usaha" id="nama_usaha" class="form-control"
                                         placeholder="Eltisweiss, PT" value="{{ old('nama_usaha') }}" />
                                     <div id="nama_usaha-error" class="error-message"></div>
 
                                 </div>
                                 <div class="mb-1 col-md-12">
-                                    <label class="form-label" for="alamat">Alamat</label>
+                                    <label class="form-label" for="alamat">Alamat <span
+                                    class="text-danger">*</span></label>
                                     <textarea id="alamat" class="form-control" rows="7" placeholder="Alamat"></textarea>
                                     <div id="alamat-error" class="error-message"></div>
                                 </div>
                             </div>
                             <div class="col-lg-6 col-md-6">
                                 <div class="col-md-12 mb-1">
-                                    <label class="form-label" for="select2-provinsi">Provinsi</label>
-                                    <select class="select2 form-select" id="select2-provinsi" disabled>
-                                        <option value="{{ $provinsi->id }}" selected>
-                                            {{ $provinsi->kode . '-' . $provinsi->nama }}
-                                        </option>
+                                    <label class="form-label" for="select2-provinsi">Provinsi <span
+                                    class="text-danger">*</span></label>
+                                    <select class="select2 form-select" id="select2-provinsi">
+                                        <option value="">-- Pilih Provinsi --</option>
+                                        @foreach($masterProvinsi as $provinsi)
+                                        <option value="{{ $provinsi->id }}">[{{ $provinsi->kode }}] {{ $provinsi->nama }}</option>
+                                        @endforeach                                        
                                     </select>
+                                    <div id="select2-provinsi-error" class="error-message"></div>
                                 </div>
-                                <div class="col-md-12 mb-1">
-                                    <label class="form-label" for="select2-kabupaten_kota">Kabupaten/Kota</label>
-                                    <select class="select2 form-select" {{ $createNewUsahaProvinsi ? '' : 'disabled' }}
-                                        id="select2-kabupaten_kota">
-                                        @if ($createNewUsahaProvinsi)
-                                            <option value="">Pilih Kabupaten/Kota</option>
-                                            @foreach ($kabupaten_kota as $item)
-                                                <option value="{{ $item->id }}">
-                                                    {{ $item->kode . '-' . $item->nama }}
-
-                                                </option>
-                                            @endforeach
-                                        @else
-                                            <option value="{{ $kabupaten_kota->id }}" selected>
-                                                {{ $kabupaten_kota->kode }}
-                                                - {{ $kabupaten_kota->nama }}
-                                            </option>
-                                        @endif
+                                <div class="col-md-12 mb-1 container-kabupaten">
+                                    <label class="form-label" for="select2-kabupaten_kota">Kabupaten/Kota <span
+                                    class="text-danger">*</span></label>
+                                    <select class="select2 form-select" id="select2-kabupaten_kota">
+                                        <option value="">-- Pilih Kabupaten/Kota --</option>
                                     </select>
                                     <div id="select2-kabupaten_kota-error" class="error-message"></div>
                                 </div>
 
-                                <div class="col-md-12 mb-1">
+                                <div class="col-md-12 mb-1 container-kecamatan">
                                     <label class="form-label" for="select2-kecamatan">Kecamatan</label>
                                     <select class="select2 form-select" id="select2-kecamatan">
-                                        <option value="">Pilih Kecamatan</option>
-                                        @foreach ($kecamatan as $item)
-                                            <option value="{{ $item->id }}"
-                                                data-kabupaten_kota-id="{{ $item->kabupaten_kota_id }}">
-                                                {{ $item->kode . '-' . $item->nama }}
-                                            </option>
-                                        @endforeach
+                                        <option value="">-- Pilih Kecamatan --</option>                                        
                                     </select>
                                 </div>
-                                <div class="col-md-12 mb-1">
+                                <div class="col-md-12 mb-1 container-desa">
                                     <label class="form-label" for="select2-kelurahan_desa">Kelurahan/Desa</label>
                                     <select class="select2 form-select" id="select2-kelurahan_desa">
-                                        <option value="">Pilih Kelurahan/Desa</option>
-                                        @foreach ($kelurahan_desa as $item)
-                                            <option value="{{ $item->id }}"
-                                                data-kecamatan-id="{{ $item->kecamatan_id }}">
-                                                {{ $item->kode . '-' . $item->nama }}
-                                            </option>
-                                        @endforeach
+                                        <option value="">-- Pilih Kelurahan/Desa --</option>                                        
                                     </select>
                                 </div>
 
@@ -306,9 +284,7 @@
         const createPostURL = "{{ route('form_create_usaha.store') }}";
         let buttonState = false
     </script>
-    <!-- Page js files -->
-    {{-- <script src="{{ asset(mix('js/scripts/forms/form-wizard.js')) }}"></script> --}}
-    {{-- <script src="{{ asset(mix('js/scripts/extensions/matchapro-blockui-create.js')) }}"></script> --}}
+    <!-- Page js files -->    
     <script src="{{ asset(mix('js/scripts/forms/form-select2.js')) }}"></script>
     <script src="{{ asset(mix('js/scripts/forms/matchapro-form-wizard-create.js')) }}"></script>
 
@@ -316,90 +292,247 @@
     {{-- Select Wilayah --}}
     <script>
         $(document).ready(function() {
+                    
+            $('.select2').select2();            
+            
 
-            var createNewUsahaProvinsi = @json($createNewUsahaProvinsi);
-            // Initialize Select2
-            $('.select2').select2();
+            function setOption(area, data) {
+                // Clear existing options
+                area.empty();
+                // Append new options dynamically
+                let temp = []
+                $.each(data, function (index, option) {
+                    var newOption = new Option(option.text, option.id, false, false);
+                    temp.push(newOption);
+                });
+                area.append(temp).trigger('change');
+            }
 
-            // Store the original list of Kelurahan/Desa options
-            var allKelurahanDesaOptions = $('#select2-kelurahan_desa').html();
-            var allKecamatanOptions = $('#select2-kecamatan').html();
-
-            //When Kabupaten is selected
-            $('#select2-kabupaten_kota').on('change', function() {
-
-
-                var selectedKabupatenKotaId = $(this).val()
-                var allKecamatanOptionsTemp = allKecamatanOptions;
-                // Reset the Kecamatan dropdown
-                $('#select2-kecamatan').html('<option value="">Pilih Kecamatan</option>');
-
-                if (selectedKabupatenKotaId) {
-                    // Loop through all options and append only the matching ones
-                    $(allKecamatanOptionsTemp).filter('option').each(function() {
-                        var kecamatanKabupatenId = $(this).data('kabupaten_kota-id');
-
-                        if (kecamatanKabupatenId == selectedKabupatenKotaId) {
-                            $('#select2-kecamatan').append($(this).clone());
+            function blockProgress(area) {
+                // kalo mau ngeblok satu halaman
+                if (area == 'body') {
+                    $.blockUI({
+                        message: '<div class="spinner-border text-primary" role="status"></div>',
+                        css: {
+                            backgroundColor: 'transparent',
+                            border: '0'
+                        },
+                        overlayCSS: {
+                            backgroundColor: '#fff',
+                            opacity: 0.8
                         }
                     });
+                    return;
                 }
 
-                // Refresh the Select2 to apply the changes
-                $('#select2-kecamatan').trigger('change');
+                area.block({
+                    message: '<div class="spinner-border text-primary" role="status"></div>',
+                    css: {
+                        backgroundColor: 'transparent',
+                        border: '0'
+                    },
+                    overlayCSS: {
+                        backgroundColor: '#fff',
+                        opacity: 0.8
+                    }
+                });
+            }
+
+            function unblockProgress(area) {
+                if (area == 'body') {
+                    $.unblockUI();
+                    return;
+                }
+                area.unblock();
+            }
+
+            let kabupatenCache = [];
+            $("#select2-provinsi").on('change', function() {
+                let provinsi = $(this).val();
+                if(!provinsi) {                    
+                    setOption($('#select2-kabupaten_kota'), [{
+                        id: '',
+                        text: '-- Pilih Kabupaten/Kota --'
+                    }]);
+                    return;
+                }
+
+                let findCache = kabupatenCache.find(kc => kc.provinsi == provinsi);
+                if(findCache) {
+                    setOption($('#select2-kabupaten_kota'), findCache.kabupaten_kota);
+                    return;
+                }
+
+                blockProgress($('.container-kabupaten'));
+                $.ajax({
+                    url: '{{ route("wil-kabupaten-kota-user") }}',
+                    type: 'POST',
+                    data: {
+                        'provinsi': provinsi,
+                        '_token': '{{ csrf_token() }}',                        
+                    },
+                    success: function (response) {
+                        let wilKab = [{
+                            id: '',
+                            text: '-- Pilih Kabupaten/Kota --'
+                        }]
+                        for (let i = 0; i < response.length; i++) {
+                            wilKab.push({
+                                id: response[i].id,
+                                text: '[' + response[i].kode + ']' + ' ' + response[i]
+                                    .nama
+                            })
+                        }
+
+                        kabupatenCache.push({
+                            provinsi: provinsi,
+                            kabupaten_kota: wilKab
+                        })
+
+                        setOption($('#select2-kabupaten_kota'), wilKab);                        
+                        unblockProgress($('.container-kabupaten'));
+                    }, 
+                    error: function(err) {
+                        Swal.fire({
+                            title: 'Pemberitahuan',
+                            text: 'Gagal mengambil data wilayah!',
+                            icon: 'error',
+                            customClass: {
+                                confirmButton: 'btn btn-primary'
+                            },
+                            buttonsStyling: false
+                        });
+                        unblockProgress($('.container-kabupaten'));
+                    }
+                })
+
+            })
+
+            //When Kabupaten is selected
+            let kecamatanCache = [];
+            $('#select2-kabupaten_kota').on('change', function() {
+
+                let kabupaten_kota = $(this).val();
+                if(!kabupaten_kota) {
+                    setOption($('#select2-kecamatan'), [{
+                        id: '',
+                        text: '-- Pilih Kecamatan --'
+                    }]);
+                    return;
+                }
+
+                let findCache = kecamatanCache.find(kc => kc.kabupaten_kota == kabupaten_kota);
+                if(findCache) {
+                    setOption($('#select2-kecamatan'), findCache.kecamatan);
+                    return;
+                }
+
+                blockProgress($('.container-kecamatan'));
+                $.ajax({
+                    url: '{{ route("wil-kecamatan") }}',
+                    type: 'POST',
+                    data: {
+                        'kabupaten_kota': kabupaten_kota,
+                        '_token': '{{ csrf_token() }}'
+                    },
+                    success: function (response) {
+                        let wilKecamatan = [{
+                            id: '',
+                            text: '-- Pilih Kecamatan --'
+                        }]
+                        for (let i = 0; i < response.length; i++) {
+                            wilKecamatan.push({
+                                id: response[i].id,
+                                text: '[' + response[i].kode + ']' + ' ' + response[i]
+                                    .nama
+                            })
+                        }
+
+                        kecamatanCache.push({
+                            kabupaten_kota: kabupaten_kota,
+                            kecamatan: wilKecamatan
+                        });
+
+                        setOption($("#select2-kecamatan"), wilKecamatan);                        
+                        unblockProgress($(".container-kecamatan"));
+                    },
+                    error: function(err) {
+                        Swal.fire({
+                            title: 'Pemberitahuan',
+                            text: 'Gagal mengambil data wilayah!',
+                            icon: 'error',
+                            customClass: {
+                                confirmButton: 'btn btn-primary'
+                            },
+                            buttonsStyling: false
+                        });
+                        unblockProgress($('.container-kecamatan'));
+                    }
+                })                
 
             })
 
             // When Kecamatan is selected
+            let desaCache = [];
             $('#select2-kecamatan').on('change', function() {
-                var selectedKecamatanId = $(this).val();
-                // Reset the Kelurahan/Desa dropdown
-                $('#select2-kelurahan_desa').html('<option value="">Pilih Kelurahan/Desa</option>');
+                let kecamatan = $(this).val();
 
-                //Cek Permission
-                if (createNewUsahaProvinsi == true) {
-                    //User Provinsi
-                    if (selectedKecamatanId) {
-                        // Make AJAX request to get Kelurahan/Desa based on Kecamatan ID
-                        $.ajax({
-                            url: '{{ route('getDataKelurahanDesa') }}', // Define your route
-                            type: 'GET',
-                            data: {
-                                kecamatan_id: selectedKecamatanId
-                            },
-                            success: function(data) {
-                                // Populate the Kelurahan/Desa dropdown
-                                $.each(data, function(index, kelurahan) {
-                                    $('#select2-kelurahan_desa').append(
-                                        '<option value="' + kelurahan.id + '">' +
-                                        kelurahan.kode + '-' + kelurahan.nama +
-                                        //   kelurahan.kecamatan_id +
-                                        '</option>');
-                                });
-                            },
-                            error: function() {
-                                alert('Unable to load Kelurahan/Desa data.');
-                            }
-                        });
-                    }
+                if(!kecamatan) {
+                    setOption($("#select2-kelurahan_desa"), [{
+                        id: '',
+                        text: '-- Pilih Kelurahan/Desa --'
+                    }]);
+                    return;
                 }
 
-                if (createNewUsahaProvinsi == false) {
-                    //User Kab
-                    if (selectedKecamatanId) {
-                        // Loop through all options and append only the matching ones
-                        $(allKelurahanDesaOptions).filter('option').each(function() {
-                            var kelurahanKecamatanId = $(this).data('kecamatan-id');
-
-                            if (kelurahanKecamatanId == selectedKecamatanId) {
-                                $('#select2-kelurahan_desa').append($(this).clone());
-                            }
-                        });
-                    }
-
-                    // Refresh the Select2 to apply the changes
-                    $('#select2-kelurahan_desa').trigger('change');
+                let findCache = desaCache.find(dc => dc.kecamatan == kecamatan);
+                if (findCache) {
+                    setOption($("#select2-kelurahan_desa"), findCache.desa);                    
+                    return;
                 }
+
+                blockProgress($('.container-desa'));
+                $.ajax({
+                    url: '{{ route("wil-desa") }}',
+                    type: 'POST',
+                    data: {
+                        'kecamatan': kecamatan,
+                        '_token': '{{ csrf_token() }}'
+                    },
+                    success: function (response) {
+                        let wilDesa = [{
+                            id: '',
+                            text: '-- Pilih Kelurahan/Desa --'
+                        }]
+                        for (let i = 0; i < response.length; i++) {
+                            wilDesa.push({
+                                id: response[i].id,
+                                text: '[' + response[i].kode + ']' + ' ' + response[i]
+                                    .nama
+                            })
+                        }
+                        // insert into cache 
+                        desaCache.push({
+                            kecamatan: kecamatan,
+                            desa: wilDesa
+                        });
+                        // set option
+                        setOption($("#select2-kelurahan_desa"), wilDesa);
+                        unblockProgress($(".container-desa"));
+                    }, 
+                    error: function(err) {
+                        Swal.fire({
+                            title: 'Pemberitahuan',
+                            text: 'Gagal mengambil data wilayah!',
+                            icon: 'error',
+                            customClass: {
+                                confirmButton: 'btn btn-primary'
+                            },
+                            buttonsStyling: false
+                        });
+                        unblockProgress($('.container-desa'));
+                    }
+                })                
 
             });
 
@@ -424,17 +557,14 @@
             updateButtonState();
         });
     </script>
-
-    {{-- Local Storage --}}
-    <script>
-        var createNewUsahaProvinsi = @json($createNewUsahaProvinsi);
+    
+    <script>        
         //clear Form
         const buttonClearForm = document.getElementById('btnClearForm');
         buttonClearForm.addEventListener('click', clearFormData);
         buttonClearForm.addEventListener('click', clearFormDataPage);
 
-        function clearFormDataPage() {
-            console.log('cek clearForm', createNewUsahaProvinsi)
+        function clearFormDataPage() {            
             document.getElementById('nama_usaha').value = ''
             document.getElementById('alamat').value = ''
 
@@ -447,25 +577,20 @@
             const kelurahanDesaSelect = $('#select2-kelurahan_desa');
             kelurahanDesaSelect.val('').trigger('change'); // Reset and update Select2
 
+            const kabupatenKotaSelect = $('#select2-kabupaten_kota');
+            kabupatenKotaSelect.val('').trigger('change');
 
-            // If createNewUsahaProvinsi is true, clear Kabupaten/Kota dropdown
-            if (createNewUsahaProvinsi) {
-                const kabupatenKotaSelect = $('#select2-kabupaten_kota');
-                kabupatenKotaSelect.val('').trigger('change'); // Reset and update Select2
-                // Optionally, reset the options if necessary
-                // while (kabupatenKotaSelect.options.length > 1) {
-                //     kabupatenKotaSelect.remove(1); // Remove all options except the first (Pilih Kabupaten/Kota)
-                // }
-            }
+            const provinsiSelect = $("#select2-provinsi");
+            provinsiSelect.val('').trigger('change');            
         }
 
         // Function to save form data to localStorage
         function saveFormData() {
             localStorage.setItem('nama_usaha', document.getElementById('nama_usaha').value);
             localStorage.setItem('alamat', document.getElementById('alamat').value);
-            localStorage.setItem('select2-kabupaten_kota', $('#select2-kabupaten_kota').val()); // Use jQuery for Select2
-            localStorage.setItem('select2-kecamatan', $('#select2-kecamatan').val());
-            localStorage.setItem('select2-kelurahan_desa', $('#select2-kelurahan_desa').val());
+            // localStorage.setItem('select2-kabupaten_kota', $('#select2-kabupaten_kota').val()); // Use jQuery for Select2
+            // localStorage.setItem('select2-kecamatan', $('#select2-kecamatan').val());
+            // localStorage.setItem('select2-kelurahan_desa', $('#select2-kelurahan_desa').val());
             // Repeat for other fields as needed
         }
 
@@ -476,28 +601,28 @@
             }
             if (localStorage.getItem('alamat')) {
                 document.getElementById('alamat').value = localStorage.getItem('alamat');
-            }
-            if (localStorage.getItem('select2-kabupaten_kota')) {
-                $('#select2-kabupaten_kota').val(localStorage.getItem('select2-kabupaten_kota')).trigger(
-                    'change'); // Use .val() and trigger 'change'
-            }
-            if (localStorage.getItem('select2-kecamatan')) {
-                $('#select2-kecamatan').val(localStorage.getItem('select2-kecamatan')).trigger(
-                    'change'); // Use .val() and trigger 'change'
-            }
-            if (localStorage.getItem('select2-kelurahan_desa')) {
-                $('#select2-kelurahan_desa').val(localStorage.getItem('select2-kelurahan_desa')).trigger(
-                    'change'); // Use .val() and trigger 'change'
-            }
+            }               
+            // if (localStorage.getItem('select2-kabupaten_kota') != null && localStorage.getItem('select2-kabupaten_kota') != 'null') {                  
+            //     $('#select2-kabupaten_kota').val(localStorage.getItem('select2-kabupaten_kota')).trigger(
+            //         'change'); // Use .val() and trigger 'change'
+            // }
+            // if (localStorage.getItem('select2-kecamatan')) {
+            //     $('#select2-kecamatan').val(localStorage.getItem('select2-kecamatan')).trigger(
+            //         'change'); // Use .val() and trigger 'change'
+            // }
+            // if (localStorage.getItem('select2-kelurahan_desa')) {
+            //     $('#select2-kelurahan_desa').val(localStorage.getItem('select2-kelurahan_desa')).trigger(
+            //         'change'); // Use .val() and trigger 'change'
+            // }
         }
 
         // Clear localStorage on form submission
         function clearFormData() {
             localStorage.removeItem('nama_usaha');
             localStorage.removeItem('alamat');
-            localStorage.removeItem('select2-kabupaten_kota');
-            localStorage.removeItem('select2-kecamatan');
-            localStorage.removeItem('select2-kelurahan_desa');
+            // localStorage.removeItem('select2-kabupaten_kota');
+            // localStorage.removeItem('select2-kecamatan');
+            // localStorage.removeItem('select2-kelurahan_desa');
             // localStorage.removeItem('select2-kelurahan_desa');
             // Repeat for other fields as needed
         }
@@ -508,9 +633,9 @@
         // Save data when the user types or selects something
         document.getElementById('nama_usaha').addEventListener('input', saveFormData);
         document.getElementById('alamat').addEventListener('input', saveFormData);
-        $('#select2-kabupaten_kota').on('change', saveFormData);
-        $('#select2-kecamatan').on('change', saveFormData);
-        $('#select2-kelurahan_desa').on('change', saveFormData);
+        // $('#select2-kabupaten_kota').on('change', saveFormData);
+        // $('#select2-kecamatan').on('change', saveFormData);
+        // $('#select2-kelurahan_desa').on('change', saveFormData);
         // Repeat for other fields as needed
 
         // Optionally, clear the data when the form is submitted
