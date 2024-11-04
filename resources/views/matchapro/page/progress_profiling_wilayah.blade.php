@@ -107,10 +107,18 @@
                                 class="text-danger">*</span></label>
                         <select id="tahun_referensi" class="select2 form-select">
                             <option value="">-- Pilih Tahun --</option>
+                            <option value="2003">2003</option>
                             @foreach ($tahun as $option)
                                 <option value="{{ $option }}">{{ $option }}</option>
                             @endforeach
                         </select>
+                    </div>
+                    <br>
+                    <div class="mb-6">
+                        <button class="btn btn-relief-primary btn-filter w-100" id="filterDataWilayah">
+                            <i data-feather="filter" class="align-middle me-sm-25 me-0"></i>
+                            <span class="align-middle d-sm-inline-block d-none">Filter Data</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -342,11 +350,17 @@
 
             }
 
+            let progressProfilingChart;
+
             function updateProfilingChart(label, series) {
                 console.log('chart')
                 // newOptions = progressProfilingChartOptions
                 progressProfilingChartOptions.xaxis.categories = label
                 progressProfilingChartOptions.series = series
+                // Destroy the existing chart instance if it exists
+                if (progressProfilingChart) {
+                    progressProfilingChart.destroy();
+                }
                 progressProfilingChart = new ApexCharts(document.querySelector(
                         "#progress-profiling-chart"),
                     progressProfilingChartOptions);
@@ -354,6 +368,42 @@
                 console.log(progressProfilingChartOptions)
 
             }
+
+            $('#filterDataWilayah').click(function() {
+                // Get values from the select inputs
+                const provinsi = $('#provinsi').val();
+                const kabupatenKota = $('#kabupaten_kota').val();
+                const tahunReferensi = $('#tahun_referensi').val();
+
+                // Log the values to the console (or use them as needed)
+                console.log("Provinsi:", provinsi);
+                console.log("Kabupaten/Kota:", kabupatenKota);
+                console.log("Tahun Profiling:", tahunReferensi);
+
+                // You can also perform other actions here with the retrieved values
+                // Make an AJAX request with the retrieved values
+                $.ajax({
+                    url: statusStatisticsRoute, // Replace with your actual endpoint URL
+                    type: 'GET', // Use 'POST' if you need to send data to the server
+                    dataType: 'json', // Expected data type from the server
+                    data: {
+                        provinsi: provinsi,
+                        kabupaten_kota: kabupatenKota,
+                        tahun_referensi: tahunReferensi
+                    },
+                    success: function(response) {
+                        // Handle the response data
+                        console.log('success get data')
+                        updateStatusCounts(response.countGroup);
+                        updateProfilingChart(response.label, response.series);
+                    },
+                    error: function(xhr, status, error) {
+                        // Handle errors
+                        console.error('Error:', error);
+                        // alert('An error occurred while fetching the data.');
+                    }
+                });
+            });
 
 
         });
