@@ -154,7 +154,8 @@
         <div class="col-lg-8 col-md-6 col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h4 class="card-title">Profiling Progress Kab/Kota</h4>
+                    <h4 class="card-title wilayah-title">
+                        {{ $levelRole == 'PUSAT' ? 'Profiling Progress Provinsi' : 'Profiling Progress Kab/Kota' }}</h4>
                     <i data-feather="help-circle" class="font-medium-3 text-muted cursor-pointer"></i>
                 </div>
                 <div class="card-body p-0">
@@ -167,7 +168,7 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h4 class="card-title">Profiling Progress Kab/Kota</h4>
+                    <h4 class="card-title">Profiling Progress User </h4>
                     <i data-feather="help-circle" class="font-medium-3 text-muted cursor-pointer"></i>
                 </div>
                 <div class="card-body p-0">
@@ -176,7 +177,7 @@
             </div>
         </div>
     </div>
-    <div class="row">
+    {{-- <div class="row">
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
@@ -188,7 +189,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> --}}
 
 @endsection
 
@@ -302,7 +303,9 @@
                 fill: {
                     opacity: 1
                 },
-                colors: [window.colors.solid.primary, window.colors.solid.info, window.colors.solid.warning]
+                colors: [window.colors.solid.primary, window.colors.solid.info, window.colors.solid.warning,
+                    window.colors.solid.success
+                ]
             };
 
             var progressProfilingChart = new ApexCharts(document.querySelector("#progress-profiling-chart"),
@@ -336,11 +339,13 @@
                 fill: {
                     opacity: 1
                 },
-                colors: [window.colors.solid.primary, window.colors.solid.info, window.colors.solid.warning]
+                colors: [window.colors.solid.primary, window.colors.solid.info, window.colors.solid.warning,
+                    window.colors.solid.success
+                ]
             };
 
             var progressProfilingChartUser = new ApexCharts(document.querySelector(
-                "#progress-profiling-chart-user"),
+                    "#progress-profiling-chart-user"),
                 progresOptionsUser);
             progressProfilingChartUser.render();
 
@@ -375,6 +380,12 @@
                         '_token': '{{ csrf_token() }}',
                     },
                     success: function(response) {
+                        //update title
+                        if (kabupaten) {
+                            $(".wilayah-title").text('Profiling Progress Kab/Kota');
+                        } else {
+                            $(".wilayah-title").text('Profiling Progress Provinsi');
+                        }
                         // update status info
                         $('.open-count').html(response.status_usaha['OPEN']);
                         $('.draft-count').html(response.status_usaha['DRAFT']);

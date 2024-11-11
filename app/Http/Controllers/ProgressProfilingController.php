@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\MasterWilayahController;
 use DB;
 use Auth;
+use Illuminate\Support\Facades\Log;
 
 class ProgressProfilingController extends Controller
 {
@@ -166,6 +167,16 @@ class ProgressProfilingController extends Controller
         // return view('/matchapro/misc/under-maintenance', ['pageConfigs' => $pageConfigs]);        
 
         $roleUser = auth()->user()->getRoleNames();
+
+        //imam
+        $role_user = auth()->user()->getRoleNames()[0]; // PUSAT-ADMIN, dst
+        $level_role_user = explode('-' , $role_user)[0];
+       
+        if ($level_role_user == 'PUSAT') {
+            
+            return $this->wilayah_index2();
+        }
+       
         // belum memiliki roles
         if(!$roleUser->count()) {
             $pageConfigs = ['blankPage' => true];
@@ -206,7 +217,8 @@ class ProgressProfilingController extends Controller
         $wilayahAkses = DB::table('matchapro_users_wilayah_akses')->where('user_id', auth()->user()->id)->get();        
         $provinsiAkses = $wilayahAkses->pluck('provinsi_id')->unique()->toArray();
         $kabupatenAkses= $wilayahAkses->pluck('kabupaten_kota_id')->unique()->toArray();
-
+        
+    
         $data = DB::table('matchapro_alokasi_profiling as pp')  
             ->join('area_provinsi as ap', 'ap.id', '=', 'pp.init_provinsi_id')          
             ->join('area_kabupaten_kota as akk', 'akk.id', '=', 'pp.init_kabupaten_kota_id')
@@ -226,6 +238,7 @@ class ProgressProfilingController extends Controller
                 
             })            
             ->get(); 
+
 
         // progres by status
         $statusCounts = $data->pluck('status_form')->map(function ($status) {
@@ -280,6 +293,8 @@ class ProgressProfilingController extends Controller
             $user_axis = $tempUser;
         }
 
+        
+
         return view('/matchapro/page/progress_profiling_wilayah', [
             'breadcrumbs' => $breadcrumbs,
             'pageConfigs' => $pageConfigs,
@@ -303,6 +318,159 @@ class ProgressProfilingController extends Controller
             'levelRole' => $level_role_user
         ]);
 
+    }
+
+    public function wilayah_index2()
+    {
+        $pageConfigs = ['sidebarCollapsed' => false];
+        $breadcrumbs = [
+            ['link' => "home", 'name' => "Home"], ['name' => "Progress Profiling - Periodik"]
+        ];
+           // Start time
+           $start = microtime(true);
+            // Master provinsi user
+            $mp = $this->masterWilayah->getMasterProvinsiUser();
+
+            $tahun = DB::table('matchapro_periode_profiling')
+                ->selectRaw('YEAR(start_date) as year')
+                ->distinct()
+                ->pluck('year');
+
+            $role_user = auth()->user()->getRoleNames()[0];
+            $level_role_user = explode('-', $role_user)[0];
+
+            $listProfiling = DB::table('matchapro_periode_profiling')
+                ->whereYear('start_date', date('Y'))
+                ->where('id', '!=', env('PERIODE_PROFILING_MANDIRI'))
+                ->pluck('id')
+                ->unique()
+                ->toArray();
+
+            $wilayahAkses = DB::table('matchapro_users_wilayah_akses')
+                ->where('user_id', auth()->user()->id)
+                ->get();
+
+          
+            $provinsiAkses = $wilayahAkses->pluck('provinsi_id')->unique()->toArray();
+            $kabupatenAkses = $wilayahAkses->pluck('kabupaten_kota_id')->unique()->toArray();
+
+            $data = DB::table('matchapro_alokasi_profiling as pp')  
+                ->join('area_provinsi as ap', 'ap.id', '=', 'pp.init_provinsi_id')          
+                ->join('area_kabupaten_kota as akk', 'akk.id', '=', 'pp.init_kabupaten_kota_id')
+                ->join('matchapro_users as mm', 'mm.id', '=', 'pp.user_id')
+                ->select(
+                    'pp.id', 
+                    'pp.user_id', 
+                    'pp.status_form', 
+                    'pp.idsbr', 
+                    'pp.perusahaan_id', 
+                    'pp.periode_id', 
+                    'pp.action_type', 
+                    DB::raw("concat(ap.kode, ' - ', ap.nama) as nmprov"),
+                    DB::raw("concat(akk.kode, ' - ', akk.nama) as nmkab"),
+                    'ap.kode as kdprov', 
+                    'akk.kode as kdkab',
+                    'mm.username'
+                )
+                ->whereIn('periode_id', $listProfiling)                                    
+                ->when($level_role_user != 'PUSAT', function($query) use ($provinsiAkses) {            
+                    $query->whereIn('init_provinsi_id', $provinsiAkses);
+                })
+                ->when($level_role_user != 'PUSAT', function($query) use ($kabupatenAkses) {
+                    $query->whereIn('init_kabupaten_kota_id', $kabupatenAkses);
+                })
+                ->orderby('ap.kode')            
+                ->get(); 
+             // End time
+             $end = microtime(true);
+
+             // Calculate and log the query time
+             $executionTime = $end - $start;
+             Log::info("Query execution time for data: {$executionTime} seconds");
+                
+            // Progress by status
+            $statusCounts = $data->groupBy(function ($item) {
+                return $item->status_form === 'REJECTED' ? 'DRAFT' : $item->status_form;
+            })->map->count()->all();
+          
+            $statusCounts = [
+                'OPEN' => $statusCounts['OPEN'] ?? 0,
+                'DRAFT' => ($statusCounts['DRAFT'] ?? 0) + ($statusCounts['REJECTED'] ?? 0),
+                'SUBMITTED' => $statusCounts['SUBMITTED'] ?? 0,
+                'APPROVED' => $statusCounts['APPROVED'] ?? 0,
+            ];
+
+             // End time
+             $end = microtime(true);
+             // Calculate and log the query time
+             $executionTime = $end - $start;
+             Log::info("Query execution time for statusCounts: {$executionTime} seconds");
+            
+            //imam - start
+            //Progress by Prov
+            $provDetails = $data->pluck('nmprov')->unique()->toArray();
+            $prov_axis = [];
+            $listStatus = ['OPEN', 'DRAFT', 'SUBMITTED', 'APPROVED'];
+            $resultStatus = [];
+            foreach($listStatus as $status) {
+                $tempCount = [];
+                $tempProv = [];
+                foreach ($provDetails as $nmprov) {
+                    $count = $data->where('status_form', $status)->where('nmprov', $nmprov)->count();
+                    $tempCount[] = $count;
+                    $tempProv[] = $nmprov;
+                }        
+                $resultStatus[] = [
+                    'name' => $status,
+                    'data' => $tempCount
+                ];
+                $prov_axis = $tempProv;
+            }
+
+            
+            
+
+            // // Calculating totals
+            // $total_target = $data->whereNotIn('status_form', ['CANCELED'])->count();
+            // $total_approved = $data->where('status_form', 'APPROVED')->count();
+            // $total_inprogress = $data->whereNotIn('status_form', ['CANCELED', 'APPROVED'])->count();
+            
+            // End time
+            $end = microtime(true);
+            // Calculate and log the query time
+            $executionTime = $end - $start;
+            Log::info("Query execution time for totals: {$executionTime} seconds");
+           
+
+             // End time
+             $end = microtime(true);
+             // Calculate and log the query time
+             $executionTime = $end - $start;
+             Log::info("Query execution time: {$executionTime} seconds");
+ 
+             return view('/matchapro/page/progress_profiling_wilayah', [
+                'breadcrumbs' => $breadcrumbs,
+                'pageConfigs' => $pageConfigs,
+                'masterProvinsi' => $mp,
+                'tahun' => $tahun,
+                'status_usaha'=> $statusCounts,
+                'total_target' => $data->reject(function ($item) {
+                    return $item->status_form == 'CANCELED';
+                })->count(),
+                'total_approved' => $data->filter(function ($item) {
+                    return $item->status_form == 'APPROVED';
+                })->count(),
+                'total_inprogress' => $data->reject(function ($item) {
+                    return $item->status_form == 'CANCELED' || $item->status_form == 'APPROVED';
+                })->count(),
+                'kabkot_axis' => $prov_axis ?? [],
+                'kabkot_data' => $resultStatus ?? [],
+                'user_axis' => $user_axis ?? [],
+                'user_data' => $resultUsers ?? [],
+                'wilayahAkses' => $wilayahAkses->count(),
+                'levelRole' => $level_role_user
+            ]);
+    
     }
 
     public function profiler_index()
@@ -725,10 +893,11 @@ class ProgressProfilingController extends Controller
     }
 
     public function getDataProgres(Request $request) {
-
+    
         $role_user = auth()->user()->getRoleNames()[0]; // PUSAT-ADMIN, dst
         $level_role_user = explode('-' , $role_user)[0]; // PUSAT, dst
 
+      
         $provinsi = $request->provinsi;
         $kabupaten = $request->kabupaten;
         $tahun = $request->tahun_profiling;        
@@ -743,7 +912,7 @@ class ProgressProfilingController extends Controller
         $provinsiAkses = $wilayahAkses->pluck('provinsi_id')->unique()->toArray();
         $kabupatenAkses= $wilayahAkses->pluck('kabupaten_kota_id')->unique()->toArray();
 
-        if($provinsi) {
+        if($provinsi &&  $level_role_user != 'PUSAT') {
             if (!in_array($provinsi, $provinsiAkses)) {                
                 return response()->json([
                     'status' => 'error',
@@ -753,7 +922,7 @@ class ProgressProfilingController extends Controller
             $provinsiAkses = [$provinsi];
         }
 
-        if($kabupaten) {
+        if($kabupaten &&  $level_role_user != 'PUSAT') {
             if (!in_array($kabupaten, $kabupatenAkses)) {                
                 return response()->json([
                     'status' => 'error',
@@ -770,7 +939,8 @@ class ProgressProfilingController extends Controller
             ->select('pp.id', 'pp.user_id', 'pp.status_form', 'pp.idsbr', 
                 'pp.perusahaan_id', 'pp.periode_id', 'pp.action_type', DB::raw('concat(ap.kode, \' - \', ap.nama) as nmprov'),
                 DB::raw('concat(akk.kode, \' - \', akk.nama) as nmkab'), 'ap.kode as kdprov', 'akk.kode as kdkab',
-                'mm.username'
+                'mm.username', 
+                'pp.init_provinsi_id', 'pp.init_kabupaten_kota_id' //imam
                 )
             ->whereIn('periode_id', $listProfiling)                                    
             ->when($level_role_user != 'PUSAT', function($query) use ($provinsiAkses) {            
@@ -780,61 +950,165 @@ class ProgressProfilingController extends Controller
             ->when($level_role_user != 'PUSAT', function($query) use ($kabupatenAkses) {
                 $query->whereIn('init_kabupaten_kota_id', $kabupatenAkses);
                 
-            })            
+            })
+            ->whereYear('pp.created_at', $tahun)            
+            ->orderby('ap.kode') 
             ->get();        
 
-        // progres by status
-        $statusCounts = $data->pluck('status_form')->map(function ($status) {
-            if ($status === 'REJECTED') {
-                return 'DRAFT';
+        
+        //imam
+        //ubah dari sini jika role == "PUSAT"
+        if ($level_role_user == 'PUSAT') {
+            //provinsi == null
+            if ($provinsi == null) {
+                $data = $data;
+                $provDetails = $data->pluck('nmprov')->unique()->toArray();
+                $prov_axis = [];
+                $listStatus = ['OPEN', 'DRAFT', 'SUBMITTED', 'APPROVED'];
+                $resultStatus = [];
+                foreach($listStatus as $status) {
+                    $tempCount = [];
+                    $tempProv = [];
+                    foreach ($provDetails as $nmprov) {
+                        $count = $data->where('status_form', $status)->where('nmprov', $nmprov)->count();
+                        $tempCount[] = $count;
+                        $tempProv[] = $nmprov;
+                    }        
+                    $resultStatus[] = [
+                        'name' => $status,
+                        'data' => $tempCount
+                    ];
+                    $prov_axis = $tempProv;
+                }
+                $kabupaten_axis = $prov_axis;
             }
-            return $status;
-        })->countBy();
-        $statusCounts = collect([
-            'OPEN' => $statusCounts->get('OPEN', 0),
-            'DRAFT' => $statusCounts->get('DRAFT', 0) + $statusCounts->get('REJECTED', 0),
-            'SUBMITTED' => $statusCounts->get('SUBMITTED', 0),
-            'APPROVED' => $statusCounts->get('APPROVED', 0),
-        ]);
+            //provinsi != null && kabupaten == null -- Show Progress Kabupaten/Kota
+            if ($provinsi != null && $kabupaten == null) {
+                $data = $data->whereIn('init_provinsi_id', [$provinsi]);
+                
+            }
+            //provinsi != null && kabupaten != null
+            if ($provinsi != null && $kabupaten != null) {
+                $data = $data->whereIn('init_provinsi_id', [$provinsi])->whereIn('init_kabupaten_kota_id', [$kabupaten]);
+                
+            }
 
-        // progres by kabupaten/kota        
-        $kabupatenKotaDetails = $data->pluck('nmkab')->unique()->toArray();
-        $kabupaten_axis = [];
-        $listStatus =  ['OPEN', 'DRAFT', 'SUBMITTED', 'APPROVED'];
-        $resultStatus = [];
-        foreach($listStatus as $status) {
-            $tempCount = [];
-            $tempKabupaten = [];
-            foreach ($kabupatenKotaDetails as $nmkab) {
-                $count = $data->where('status_form', $status)->where('nmkab', $nmkab)->count();
-                $tempCount[] = $count;
-                $tempKabupaten[] = $nmkab;
-            }        
-            $resultStatus[] = [
-                'name' => $status,
-                'data' => $tempCount
-            ];
-            $kabupaten_axis = $tempKabupaten;
-        }    
+            //hitung progress
+            if ($provinsi != null) {
+                // progres by kabupaten/kota        
+                $kabupatenKotaDetails = $data->pluck('nmkab')->unique()->toArray();
+                $kabupaten_axis = [];
+                $listStatus =  ['OPEN', 'DRAFT', 'SUBMITTED', 'APPROVED'];
+                $resultStatus = [];
+                foreach($listStatus as $status) {
+                    $tempCount = [];
+                    $tempKabupaten = [];
+                    foreach ($kabupatenKotaDetails as $nmkab) {
+                        $count = $data->where('status_form', $status)->where('nmkab', $nmkab)->count();
+                        $tempCount[] = $count;
+                        $tempKabupaten[] = $nmkab;
+                    }        
+                    $resultStatus[] = [
+                        'name' => $status,
+                        'data' => $tempCount
+                    ];
+                    $kabupaten_axis = $tempKabupaten;
+                }    
 
-        // progres by user
-        $userDetails = $data->pluck('username')->unique()->toArray();
-        $user_axis = [];
-        $resultUsers = [];
-        foreach($listStatus as $status) {
-            $tempCount = [];
-            $tempUser = [];
-            foreach ($userDetails as $username) {
-                $count = $data->where('status_form', $status)->where('username', $username)->count();
-                $tempCount[] = $count;
-                $tempUser[] = $username;
-            }        
-            $resultUsers[] = [
-                'name' => $status,
-                'data' => $tempCount
-            ];
-            $user_axis = $tempUser;
-        }        
+                // progres by user
+                $userDetails = $data->pluck('username')->unique()->toArray();
+                $user_axis = [];
+                $resultUsers = [];
+                foreach($listStatus as $status) {
+                    $tempCount = [];
+                    $tempUser = [];
+                    foreach ($userDetails as $username) {
+                        $count = $data->where('status_form', $status)->where('username', $username)->count();
+                        $tempCount[] = $count;
+                        $tempUser[] = $username;
+                    }        
+                    $resultUsers[] = [
+                        'name' => $status,
+                        'data' => $tempCount
+                    ];
+                    $user_axis = $tempUser;
+                }
+            }
+            
+
+            // progres by status
+            $statusCounts = $data->pluck('status_form')->map(function ($status) {
+                if ($status === 'REJECTED') {
+                    return 'DRAFT';
+                }
+                return $status;
+            })->countBy();
+            $statusCounts = collect([
+                'OPEN' => $statusCounts->get('OPEN', 0),
+                'DRAFT' => $statusCounts->get('DRAFT', 0) + $statusCounts->get('REJECTED', 0),
+                'SUBMITTED' => $statusCounts->get('SUBMITTED', 0),
+                'APPROVED' => $statusCounts->get('APPROVED', 0),
+            ]);
+
+            
+        }
+        
+        if ($level_role_user != 'PUSAT') {
+            // progres by status
+            $statusCounts = $data->pluck('status_form')->map(function ($status) {
+                if ($status === 'REJECTED') {
+                    return 'DRAFT';
+                }
+                return $status;
+            })->countBy();
+            $statusCounts = collect([
+                'OPEN' => $statusCounts->get('OPEN', 0),
+                'DRAFT' => $statusCounts->get('DRAFT', 0) + $statusCounts->get('REJECTED', 0),
+                'SUBMITTED' => $statusCounts->get('SUBMITTED', 0),
+                'APPROVED' => $statusCounts->get('APPROVED', 0),
+            ]);
+
+            // progres by kabupaten/kota        
+            $kabupatenKotaDetails = $data->pluck('nmkab')->unique()->toArray();
+            $kabupaten_axis = [];
+            $listStatus =  ['OPEN', 'DRAFT', 'SUBMITTED', 'APPROVED'];
+            $resultStatus = [];
+            foreach($listStatus as $status) {
+                $tempCount = [];
+                $tempKabupaten = [];
+                foreach ($kabupatenKotaDetails as $nmkab) {
+                    $count = $data->where('status_form', $status)->where('nmkab', $nmkab)->count();
+                    $tempCount[] = $count;
+                    $tempKabupaten[] = $nmkab;
+                }        
+                $resultStatus[] = [
+                    'name' => $status,
+                    'data' => $tempCount
+                ];
+                $kabupaten_axis = $tempKabupaten;
+            }    
+
+            // progres by user
+            $userDetails = $data->pluck('username')->unique()->toArray();
+            $user_axis = [];
+            $resultUsers = [];
+            foreach($listStatus as $status) {
+                $tempCount = [];
+                $tempUser = [];
+                foreach ($userDetails as $username) {
+                    $count = $data->where('status_form', $status)->where('username', $username)->count();
+                    $tempCount[] = $count;
+                    $tempUser[] = $username;
+                }        
+                $resultUsers[] = [
+                    'name' => $status,
+                    'data' => $tempCount
+                ];
+                $user_axis = $tempUser;
+            }
+        }
+
+                
 
         return response()->json([
             'status_usaha'=> $statusCounts,  
@@ -847,10 +1121,10 @@ class ProgressProfilingController extends Controller
             'total_inprogress' => $data->reject(function ($item) {
                 return $item->status_form == 'CANCELED' || $item->status_form == 'APPROVED';
             })->count(),
-            'kabkot_axis' => $kabupaten_axis,
-            'kabkot_data' => $resultStatus,
-            'user_axis' => $user_axis,
-            'user_data' => $resultUsers
+            'kabkot_axis' => $kabupaten_axis ?? [],
+            'kabkot_data' => $resultStatus ?? [],
+            'user_axis' => $user_axis ?? [],
+            'user_data' => $resultUsers ?? []
         ], 200);            
     }
 
