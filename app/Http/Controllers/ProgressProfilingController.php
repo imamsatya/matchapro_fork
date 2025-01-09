@@ -169,6 +169,11 @@ class ProgressProfilingController extends Controller
         $roleUser = auth()->user()->getRoleNames();
 
         //imam
+        $pageConfigs = ['sidebarCollapsed' => false];
+        $breadcrumbs = [
+            ['link' => "home", 'name' => "Home"], ['name' => "Progress Profiling - Periodik"]
+        ];
+
         $role_user = auth()->user()->getRoleNames()[0]; // PUSAT-ADMIN, dst
         $level_role_user = explode('-' , $role_user)[0];
        
@@ -189,13 +194,6 @@ class ProgressProfilingController extends Controller
             return view('/matchapro/misc/not-authorized', ['pageConfigs' => $pageConfigs]);
         }
 
-
-            
-        $pageConfigs = ['sidebarCollapsed' => false];
-        $breadcrumbs = [
-            ['link' => "home", 'name' => "Home"], ['name' => "Progress Profiling - Periodik"]
-        ];
-
         // master provinsi user
         $mp = $this->masterWilayah->getMasterProvinsiUser();                
         
@@ -210,22 +208,36 @@ class ProgressProfilingController extends Controller
         $role_user = auth()->user()->getRoleNames()[0]; // PUSAT-ADMIN, dst
         $level_role_user = explode('-' , $role_user)[0]; // PUSAT, dst
 
-        $listProfiling = DB::table('matchapro_periode_profiling')->whereYear('start_date', date('Y'))
+        $listProfiling = DB::table('matchapro_periode_profiling')
+            ->whereYear('start_date', date('Y'))
             ->where('id', '!=', env('PERIODE_PROFILING_MANDIRI'))
-            ->pluck('id')->unique()->toArray();  
+            ->pluck('id')
+            ->unique()
+            ->toArray();  
 
-        $wilayahAkses = DB::table('matchapro_users_wilayah_akses')->where('user_id', auth()->user()->id)->get();        
+        $wilayahAkses = DB::table('matchapro_users_wilayah_akses')
+            ->where('user_id', auth()->user()->id)
+            ->get();
+
         $provinsiAkses = $wilayahAkses->pluck('provinsi_id')->unique()->toArray();
         $kabupatenAkses= $wilayahAkses->pluck('kabupaten_kota_id')->unique()->toArray();
         
-    
         $data = DB::table('matchapro_alokasi_profiling as pp')  
             ->join('area_provinsi as ap', 'ap.id', '=', 'pp.init_provinsi_id')          
             ->join('area_kabupaten_kota as akk', 'akk.id', '=', 'pp.init_kabupaten_kota_id')
             ->join('matchapro_users as mm', 'mm.id', '=', 'pp.user_id')
-            ->select('pp.id', 'pp.user_id', 'pp.status_form', 'pp.idsbr', 
-                'pp.perusahaan_id', 'pp.periode_id', 'pp.action_type', DB::raw('concat(ap.kode, \' - \', ap.nama) as nmprov'),
-                DB::raw('concat(akk.kode, \' - \', akk.nama) as nmkab'), 'ap.kode as kdprov', 'akk.kode as kdkab',
+            ->select(
+                'pp.id',
+                'pp.user_id',
+                'pp.status_form',
+                'pp.idsbr', 
+                'pp.perusahaan_id',
+                'pp.periode_id',
+                'pp.action_type',
+                DB::raw('concat(ap.kode, \' - \', ap.nama) as nmprov'),
+                DB::raw('concat(akk.kode, \' - \', akk.nama) as nmkab'), 
+                'ap.kode as kdprov', 
+                'akk.kode as kdkab',
                 'mm.username'
                 )
             ->whereIn('periode_id', $listProfiling)                                    
@@ -471,6 +483,42 @@ class ProgressProfilingController extends Controller
                 'levelRole' => $level_role_user
             ]);
     
+    }
+
+    //integrate wilayah_index dan wilayah_index2    
+    public function wilayah_index3()
+    {
+        $roleUser = auth()->user()->getRoleNames();
+        
+        $role_user = auth()->user()->getRoleNames()[0]; // PUSAT-ADMIN, dst
+        $level_role_user = explode('-' , $role_user)[0];
+
+        $pageConfigs = ['sidebarCollapsed' => false];
+        $breadcrumbs = [
+            ['link' => "home", 'name' => "Home"], ['name' => "Progress Profiling - Periodik"]
+        ];
+
+         // Start time
+         $start = microtime(true);
+         // Master provinsi user
+         $mp = $this->masterWilayah->getMasterProvinsiUser();
+
+         $tahun = DB::table('matchapro_periode_profiling')
+         ->selectRaw('YEAR(start_date) as year')
+         ->distinct()
+         ->pluck('year');
+
+         $listProfiling = DB::table('matchapro_periode_profiling')
+         ->whereYear('start_date', date('Y'))
+         ->where('id', '!=', env('PERIODE_PROFILING_MANDIRI'))
+         ->pluck('id')
+         ->unique()
+         ->toArray(); 
+         
+         $wilayahAkses = DB::table('matchapro_users_wilayah_akses')
+                ->where('user_id', auth()->user()->id)
+                ->get();
+
     }
 
     public function profiler_index()

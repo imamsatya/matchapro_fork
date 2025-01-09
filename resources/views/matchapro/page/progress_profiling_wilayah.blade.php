@@ -119,6 +119,17 @@
                             @endforeach
                         </select>
                     </div>
+                    <div class="mb-6">
+                        <label class="form-label" for="tahun_referensi">Periode Profiling</label>
+                        <select id="periode_opsi" class="select2 form-select">
+                            <option value="">-- Pilih Periode --</option>
+                            <option value="2003">2003</option>
+                            @foreach ($tahun as $option)
+                                <option value="{{ $option }}" {{ $option == date('Y') ? 'selected' : '' }}>
+                                    {{ $option }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                     <div class="mt-1 d-grid">
                         <button class="btn btn-relief-primary" id="filter-progres">
                             <i data-feather="filter" class=""></i>
