@@ -60,20 +60,20 @@
         </ul>
         <ul class="nav navbar-nav">
             <li class="nav-item d-none d-lg-block">
-                <a class="nav-link nav-link-style">
+                <a class="nav-link nav-link-style" id="theme-toggler">
                     <i class="ficon" data-feather="{{ $configData['theme'] === 'dark' ? 'sun' : 'moon' }}"></i>
                 </a>
             </li>
         </ul>
     </div>
-    <ul class="nav navbar-nav align-items-center ms-auto">        
+    <ul class="nav navbar-nav align-items-center ms-auto">
         <li class="nav-item dropdown dropdown-user">
             <a class="nav-link dropdown-toggle dropdown-user-link" id="dropdown-user" href="javascript:void(0);"
                 data-bs-toggle="dropdown" aria-haspopup="true">
                 <div class="user-nav d-sm-flex d-none">
                     <span class="user-name fw-bolder">
                         @if (Auth::check())
-                            @if (session('userSSO'))                                
+                            @if (session('userSSO'))
                                 {{ session('userSSO')->getName() }}
                             @else
                                 {{ Auth::user()->nama ?? 'User MatchaPro' }}
@@ -83,11 +83,11 @@
                         @endif
                     </span>
                     <span class="user-status">
-                       @if (Auth::user()->getRoleNames()->isNotEmpty())
+                        @if (Auth::user()->getRoleNames()->isNotEmpty())
                             <span>{{ preg_replace('/^[^-]+-/', '', Auth::user()->getRoleNames()[0]) }}</span>
                         @else
                             <span>No Roles Assigned</span>
-                        @endif                        
+                        @endif
                     </span>
                 </div>
                 <span class="avatar">
@@ -166,3 +166,49 @@
 </div>
 </nav>
 <!-- END: Header-->
+<script>
+    // Wait until the DOM content is fully loaded to ensure the elements exist
+    document.addEventListener('DOMContentLoaded', () => {
+        const themeToggler = document.getElementById('theme-toggler');
+
+        if (themeToggler) { // Check if the themeToggler exists
+            const featherIconElement = themeToggler.querySelector('i');
+
+            if (featherIconElement) { // Check if the <i> element exists
+
+                // Get the theme icon from localStorage
+                let featherIcon = localStorage.getItem('theme-icon');
+
+                // If not set in localStorage, get the value from the data-feather attribute
+                if (!featherIcon) {
+                    featherIcon = featherIconElement.getAttribute('data-feather');
+                    console.log('Data Feather:', featherIcon); // Log the data-feather value
+                    // Save to localStorage
+                    localStorage.setItem('theme-icon', featherIcon);
+                    console.log('!featherIcon')
+                }
+
+                // Add event listener to theme toggler
+                themeToggler.addEventListener('click', () => {
+                    const newFeatherIcon = document.getElementById('theme-toggler').querySelector('svg')
+                        .className.baseVal
+                    // Toggle between 'moon' and 'sun'
+                    const newIcon = newFeatherIcon === 'feather feather-moon ficon' ? 'moon' : 'sun';
+                    localStorage.setItem('theme-icon', newIcon);
+                });
+
+                // Check localStorage on page load
+                const savedIcon = localStorage.getItem('theme-icon');
+                // If savedIcon is 'moon', toggle the theme by manually setting the state (without triggering click on first load)
+                if (savedIcon === 'sun') {
+                    console.log('toggler clicked')
+                    themeToggler.click();
+                }
+            } else {
+                console.error('Icon element not found within theme-toggler.');
+            }
+        } else {
+            console.error('Theme toggler not found.');
+        }
+    });
+</script>

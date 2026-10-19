@@ -22,14 +22,14 @@
 
 
 @section('content')
-    @if(!$wilayahAkses && $levelRole != 'PUSAT')
-    <div class="alert alert-danger alert-dismissible fade show mb-2" role="alert">
-        <h4 class="alert-heading">Informasi</h4>
-        <div class="alert-body">
-            User belum memiliki akses terhadap wilayah manapun!
+    @if (!$wilayahAkses && $levelRole != 'PUSAT')
+        <div class="alert alert-danger alert-dismissible fade show mb-2" role="alert">
+            <h4 class="alert-heading">Informasi</h4>
+            <div class="alert-body">
+                User belum memiliki akses terhadap wilayah manapun!
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
     @endif
     <!-- Kick start -->
     <div class="card">
@@ -77,7 +77,7 @@
                                                 <option value="DRAFT">DRAFT</option>
                                                 <option value="SUBMITTED">SUBMITTED</option>
                                                 <option value="REJECTED">REJECTED</option>
-                                                <option value="APPROVED">APPROVED</option>                                                
+                                                <option value="APPROVED">APPROVED</option>
                                             </select>
                                         </div>
                                     </div>
@@ -147,7 +147,7 @@
                                                     <p class="card-text">Rejected</p>
                                                 </div>
                                             </div>
-                                        </div>                                        
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -159,7 +159,8 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="d-flex justify-content-end">
-                                    <button class="btn btn-outline-primary me-1" id="reload-periodik"><i data-feather="refresh-cw"></i> RELOAD</button>
+                                        <button class="btn btn-outline-primary me-1" id="reload-periodik"><i
+                                                data-feather="refresh-cw"></i> RELOAD</button>
                                         <button class="btn btn-outline-secondary dropdown-toggle" type="button"
                                             id="export-dropdown-periodik" data-bs-toggle="dropdown"
                                             aria-expanded="false">
@@ -182,14 +183,16 @@
                                             <thead>
                                                 <tr>
                                                     <th>
-                                                        <div class="form-check"> 
-                                                            <input class="form-check-input" type="checkbox" value="" id="checkboxSelectAll" />
-                                                            <label class="form-check-label" for="checkboxSelectAll"></label>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox"
+                                                                value="" id="checkboxSelectAll" />
+                                                            <label class="form-check-label"
+                                                                for="checkboxSelectAll"></label>
                                                         </div>
                                                     </th>
                                                     <th>IDSBR</th>
                                                     <th>Nama</th>
-                                                    <th>Alamat</th>                                                    
+                                                    <th>Alamat</th>
                                                     <th>Status</th>
                                                     <th>Updated At</th>
                                                     <th>Updated By</th>
@@ -202,7 +205,7 @@
                                                     <th></th>
                                                     <th>IDSBR</th>
                                                     <th>Nama</th>
-                                                    <th>Alamat</th>                                                                                                        
+                                                    <th>Alamat</th>
                                                     <th>Status</th>
                                                     <th>Updated At</th>
                                                     <th>Updated By</th>
@@ -327,7 +330,8 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="d-flex justify-content-end">
-                                        <button class="btn btn-outline-primary me-1" id="reload-mandiri"><i data-feather="refresh-cw"></i> RELOAD</button>
+                                        <button class="btn btn-outline-primary me-1" id="reload-mandiri"><i
+                                                data-feather="refresh-cw"></i> RELOAD</button>
                                         <button class="btn btn-outline-secondary dropdown-toggle" type="button"
                                             id="export-dropdown-mandiri" data-bs-toggle="dropdown" aria-expanded="false">
                                             <i data-feather="upload" class="me-25"></i>
@@ -350,7 +354,7 @@
                                                 <tr>
                                                     <th>IDSBR</th>
                                                     <th>Nama</th>
-                                                    <th>Alamat</th>                                                    
+                                                    <th>Alamat</th>
                                                     <th>Status</th>
                                                     <th>Updated At</th>
                                                     <th>Updated By</th>
@@ -362,7 +366,7 @@
                                                 <tr>
                                                     <th>Kode</th>
                                                     <th>Nama</th>
-                                                    <th>Alamat</th>                                                    
+                                                    <th>Alamat</th>
                                                     <th>Status</th>
                                                     <th>Updated At</th>
                                                     <th>Updated By</th>
@@ -648,8 +652,8 @@
                 "{{ route('form_update_usaha.index', ['perusahaan_id' => ':perusahaan_id', 'alokasi_id' => ':alokasi_id']) }}";
             let cancelUpdateUsahaRoute =
                 "{{ route('form_update_usaha.cancel', ['perusahaan_id' => ':perusahaan_id', 'alokasi_id' => ':alokasi_id']) }}";
-            
-            let canEdit = {{ $canEdit ? 'true' : 'false' }};            
+
+            let canEdit = {{ $canEdit ? 'true' : 'false' }};
 
             var table = $('#data_profiling').DataTable({
                 language: {
@@ -673,23 +677,21 @@
                 // language: {
                 //     processing: '<div class="d-flex justify-content-center align-items-center"><p class="me-50 mb-0">Mohon Menunggu...</p></div> <div class="spinner-border text-primary" role="status">',
                 // },
-                columns: [
-                    {
+                columns: [{
                         data: null,
-                        orderable: false, 
-                        render: function (data, type, full, meta) {
+                        orderable: false,
+                        render: function(data, type, full, meta) {
                             console.log(data)
                             return (
-                            `<div class="form-check"> <input class="form-check-input dt-checkboxes" type="checkbox" value="" 
+                                `<div class="form-check"> <input class="form-check-input dt-checkboxes" type="checkbox" value="" 
                                 id="checkbox-${data}" />
                                 <label class="form-check-label" for="checkbox-${data}"></label></div>`
                             );
                         },
                         checkboxes: {
-                            selectAllRender:
-                            '<div class="form-check"> <input class="form-check-input" type="checkbox" value="" id="checkboxSelectAll" /><label class="form-check-label" for="checkboxSelectAll"></label></div>'
+                            selectAllRender: '<div class="form-check"> <input class="form-check-input" type="checkbox" value="" id="checkboxSelectAll" /><label class="form-check-label" for="checkboxSelectAll"></label></div>'
                         }
-                    },                    
+                    },
                     {
                         data: 'idsbr',
                         title: 'IDSBR',
@@ -708,7 +710,7 @@
                         render: function(data, type, full, meta) {
                             return full.alamat ? full.alamat : full.alamat_sbr;
                         }
-                    },                    
+                    },
                     {
                         data: 'status_form',
                         title: 'Status',
@@ -754,7 +756,7 @@
                     },
                     {
                         data: 'username',
-                        title: 'Updated By'                        
+                        title: 'Updated By'
                     },
                     {
                         data: 'action_type',
@@ -772,17 +774,34 @@
                                 .replace(':alokasi_id', row.id);
 
                             // Generate buttons with actions
+                            // return `
+                        // <a href="javascript:void(0)" data-bs-toggle="modal" 
+                        //     data-url="{{ route('form_update_usaha.history', ['perusahaan_id' => '__PERUSAHAAN_ID__', 'alokasi_id' => '__ALOKASI_ID__']) }}" 
+                        //     data-perusahaan_id="${row.perusahaan_id}" data-alokasi_id="${row.id}" data-bs-target="#backdrop">
+                        //     <button type="button" class="btn btn-icon btn-flat-primary btn-lg" data-bs-toggle="tooltip" data-bs-placement="top" title="View History">
+                        //         <i data-feather="eye" width="40" height="40"></i>
+                        //     </button>
+                        // </a>
+                        // ${canEdit ? `<a href="${editUrl}" > 
+                            //         <button type="button" class="btn btn-icon btn-flat-primary btn-lg " data-bs-toggle="tooltip" data-bs-placement="top" title="Edit"><i data-feather="edit" width="40" height="40"></i></button>
+                            //     </a>` : ``}
+                        // `;
+
                             return `
-                            <a href="javascript:void(0)" data-bs-toggle="modal" 
-                                data-url="{{ route('form_update_usaha.history', ['perusahaan_id' => '__PERUSAHAAN_ID__', 'alokasi_id' => '__ALOKASI_ID__']) }}" 
-                                data-perusahaan_id="${row.perusahaan_id}" data-alokasi_id="${row.id}" data-bs-target="#backdrop">
-                                <button type="button" class="btn btn-icon btn-flat-primary btn-lg" data-bs-toggle="tooltip" data-bs-placement="top" title="View History">
-                                    <i data-feather="eye" width="40" height="40"></i>
-                                </button>
-                            </a>
-                            ${canEdit ? `<a href="${editUrl}" > 
-                                <button type="button" class="btn btn-icon btn-flat-primary btn-lg " data-bs-toggle="tooltip" data-bs-placement="top" title="Edit"><i data-feather="edit" width="40" height="40"></i></button>
-                            </a>` : ``}
+                            <div class="d-flex align-items-center col-actions">
+                                ${canEdit ? `
+                                                                    <a href="${editUrl}" class="btn btn-edit-perusahaan btn-sm btn-flat-primary me-1" 
+                                                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
+                                                                        ${feather.icons['edit'].toSvg({ class: 'font-small-4' })}
+                                                                    </a>
+                                                                ` : ``}
+                                <a href="javascript:void(0);" data-bs-toggle="modal" 
+                                    data-url="{{ route('form_update_usaha.history', ['perusahaan_id' => '__PERUSAHAAN_ID__', 'alokasi_id' => '__ALOKASI_ID__']) }}"
+                                    data-perusahaan_id="${row.perusahaan_id}" data-alokasi_id="${row.id}" data-bs-target="#backdrop" 
+                                    class="btn btn-sm btn-flat-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="View History">
+                                    ${feather.icons['search'].toSvg({ class: 'font-small-4' })}
+                                </a>
+                            </div>
                             `;
                         },
                         width: '12%'
@@ -894,7 +913,7 @@
             // $("#select2-periode").change();
 
             //Profiling Mandiri
-            var id_profiling_mandiri = @json($id_profiling_mandiri);            
+            var id_profiling_mandiri = @json($id_profiling_mandiri);
             var table_mandiri = $('#data_profiling_mandiri').DataTable({
                 language: {
                     emptyTable: "Tidak ada Data yang tersedia"
@@ -934,7 +953,7 @@
                         render: function(data, type, full, meta) {
                             return full.alamat ? full.alamat : full.alamat_sbr;
                         }
-                    },                     
+                    },
                     {
                         data: 'status_form',
                         title: 'Status',
@@ -982,7 +1001,7 @@
                     },
                     {
                         data: 'username',
-                        title: 'Updated By',                        
+                        title: 'Updated By',
                     },
                     {
                         data: 'action_type',
@@ -1018,24 +1037,24 @@
 
                                         ${canEdit && (row.status_form != 'APPROVED' && row.status_form != 'CANCELED') ? 
                                         `<a href="${editUrl}"> 
-                                            <button type="button" class="btn btn-icon btn-flat-primary btn-lg" 
-                                                    data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
-                                                <i data-feather="edit" width="40" height="40"></i>
-                                            </button>
-                                        </a>` : ``}
+                                                                                    <button type="button" class="btn btn-icon btn-flat-primary btn-lg" 
+                                                                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
+                                                                                        <i data-feather="edit" width="40" height="40"></i>
+                                                                                    </button>
+                                                                                </a>` : ``}
 
                                         ${((row.action_type === 'CREATE' || row.action_type == 'UPDATE') && 
                                         (row.status_form === 'OPEN' || row.status_form === 'DRAFT' || row.status_form === 'REJECTED')) ? `
-                                            <button type="button" class="cancel-button btn btn-icon btn-flat-danger btn-lg" 
-                                                    data-url="{{ route('form_update_usaha.cancel', ['perusahaan_id' => '__PERUSAHAAN_ID__', 'alokasi_id' => '__ALOKASI_ID__']) }}" 
-                                                    data-perusahaan_id="${row.perusahaan_id}" 
-                                                    data-alokasi_id="${row.id}" 
-                                                    data-bs-toggle="tooltip" 
-                                                    data-bs-placement="top" 
-                                                    title="Cancel">
-                                                <i data-feather="x" width="40" height="40"></i>
-                                            </button>
-                                        ` : ``}
+                                                                                    <button type="button" class="cancel-button btn btn-icon btn-flat-danger btn-lg" 
+                                                                                            data-url="{{ route('form_update_usaha.cancel', ['perusahaan_id' => '__PERUSAHAAN_ID__', 'alokasi_id' => '__ALOKASI_ID__']) }}" 
+                                                                                            data-perusahaan_id="${row.perusahaan_id}" 
+                                                                                            data-alokasi_id="${row.id}" 
+                                                                                            data-bs-toggle="tooltip" 
+                                                                                            data-bs-placement="top" 
+                                                                                            title="Cancel">
+                                                                                        <i data-feather="x" width="40" height="40"></i>
+                                                                                    </button>
+                                                                                ` : ``}
                                     `;
                         },
 
@@ -1108,7 +1127,7 @@
                                     title: 'Cancelled!',
                                     text: 'Profiling (update/create) berhasil dibatalkan',
                                     icon: 'success'
-                                });                                
+                                });
                             },
                             error: function(xhr) {
                                 // Close the loading animation
@@ -1119,7 +1138,7 @@
                                     title: 'Error!',
                                     text: 'Terjadi kesalahan. Silakan coba kembali.',
                                     icon: 'error'
-                                });                                
+                                });
                             }
                         });
                     }
@@ -1195,7 +1214,7 @@
                 var sectionBlock = $('.section-block-history_periodik')
                 // Get perusahaan_id and alokasi_id from the clicked button
                 const perusahaanId = $(this).data('perusahaan_id');
-                const alokasiId = $(this).data('alokasi_id');                
+                const alokasiId = $(this).data('alokasi_id');
                 // Get the URL from the data-url attribute and replace placeholders with actual IDs
                 let getDetailUrl = $(this).data('url');
                 getDetailUrl = getDetailUrl.replace('__PERUSAHAAN_ID__', perusahaanId);
@@ -1227,10 +1246,10 @@
                         });
                     },
                     success: function(data) {
-                        sectionBlock.unblock();                        
+                        sectionBlock.unblock();
                         buildDataTableDetail(data);
                     },
-                    error: function(err) {                        
+                    error: function(err) {
                         sectionBlock.unblock();
                         alert('Unable to load data.');
                     }
@@ -1298,7 +1317,8 @@
                             data: null,
                             title: 'Kelurahan/Desa',
                             render: function(data, type, row) {
-                                if (row.kelurahan_desa_kode === null || row.kelurahan_desa_nama === null) {
+                                if (row.kelurahan_desa_kode === null || row.kelurahan_desa_nama ===
+                                    null) {
                                     return null;
                                 }
                                 return `${row.kelurahan_desa_kode}-${row.kelurahan_desa_nama}`;
@@ -1520,19 +1540,19 @@
                 table.ajax.reload(null, false)
             })
 
-            table_mandiri.on('preXhr.dt', function(){
+            table_mandiri.on('preXhr.dt', function() {
                 blockProgress($('.card-container'));
             })
 
-            table_mandiri.on('xhr.dt', function(){
+            table_mandiri.on('xhr.dt', function() {
                 unblockProgress($('.card-container'));
             })
 
-            table.on('preXhr.dt', function(){
+            table.on('preXhr.dt', function() {
                 blockProgress($('.card-container'));
             })
 
-            table.on('xhr.dt', function(){
+            table.on('xhr.dt', function() {
                 unblockProgress($('.card-container'));
             })
 

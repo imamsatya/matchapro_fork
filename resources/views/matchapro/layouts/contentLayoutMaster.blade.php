@@ -17,10 +17,8 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=0,minimal-ui">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="description"
-        content="Profiling SBR">
-    <meta name="keywords"
-        content="SBR PROFILING">
+    <meta name="description" content="Profiling SBR">
+    <meta name="keywords" content="SBR PROFILING">
     <meta name="author" content="SBR">
     <title>@yield('title') - MATCHAPRO</title>
     <link rel="apple-touch-icon" href="{{ asset('images/logo/logoFRS.png') }}">
@@ -32,26 +30,26 @@
     @include('panels/styles')
 
     <style>
-    .matcha-pro {
-        margin-top: 0.3rem;
-        font-family: 'Arial', sans-serif;
-        font-weight: bold;
-        font-size: 1.2rem;
-        letter-spacing: 1px;
-        background-color: #29c770;
-        color: white;
-        padding: 0px 0px 0px 5px;
-        display: inline-block;
-        border: 3px solid #29c770;
-  }
+        .matcha-pro {
+            margin-top: 0.3rem;
+            font-family: 'Arial', sans-serif;
+            font-weight: bold;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+            background-color: #29c770;
+            color: white;
+            padding: 0px 0px 0px 5px;
+            display: inline-block;
+            border: 3px solid #29c770;
+        }
 
-  .matcha-pro span {
-    background-color: white;
-    color: #29c770;
-    padding: 0px 3px;
-    display: inline-block;
-  }
-  </style>
+        .matcha-pro span {
+            background-color: white;
+            color: #29c770;
+            padding: 0px 3px;
+            display: inline-block;
+        }
+    </style>
 </head>
 <!-- END: Head-->
 
